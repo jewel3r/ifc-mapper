@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IFC Model Mapper - Конвертер моделей</title>
+    <link rel="stylesheet" href="/styles.css">
+    <script src="https://unpkg.com/monaco-editor@0.33.0/min/vs/loader.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <h1>🔧 IFC Model Mapper</h1>
+            <p>Преобразование объектных моделей в формат IFC</p>
+        </header>
+
+        <!-- Control Panel -->
+        <div class="control-panel">
+            <div class="upload-section">
+                <input type="file" id="fileInput" accept=".owl,.ttl,.rdf,.txt">
+                <button id="detectTypeBtn">Определить тип модели</button>
+            </div>
+
+            <div class="type-selection">
+                <label for="sourceType">Тип исходной модели:</label>
+                <select id="sourceType">
+                    <option value="auto">Авто-определение</option>
+                    <option value="owl">OWL Turtle</option>
+                    <option value="rdf">OWL RDF/XML</option>
+                </select>
+
+                <label for="targetIfcVersion">Версия IFC:</label>
+                <select id="targetIfcVersion">
+                    <option value="ifc4x3">IFC4X3</option>
+                </select>
+            </div>
+
+            <div class="mapping-config">
+                <h3>Настройки преобразования</h3>
+                <div class="rules-container">
+                    <div style="color: #64748b; font-style: italic;">
+                        Настройки будут добавлены позже
+                    </div>
+                    <button id="advancedSettingsBtn">Дополнительные настройки</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Основная область: редакторы и кнопка преобразования -->
+        <div class="main-content">
+            <!-- Левый редактор -->
+            <div class="editor-panel">
+                <div class="panel-header">
+                    <h3>Исходная модель</h3>
+                    <div class="panel-actions">
+                        <button id="validateSourceBtn">Проверить</button>
+                        <button id="formatSourceBtn">Форматировать</button>
+                        <button id="fullscreenSourceBtn" class="fullscreen-button">⛶</button>
+                    </div>
+                </div>
+                <div id="sourceEditor" class="editor"></div>
+            </div>
+
+            <!-- Только кнопка преобразования по центру -->
+            <div class="conversion-panel">
+                <button id="convertBtn" class="convert-button">▶ Преобразовать в IFC</button>
+            </div>
+
+            <!-- Правый редактор -->
+            <div class="editor-panel">
+                <div class="panel-header">
+                    <h3>Результат IFC</h3>
+                    <div class="panel-actions">
+                        <button id="validateIfcBtn">Проверить IFC</button>
+                        <button id="downloadBtn">Скачать IFC</button>
+                        <button id="exportMappingBtn" class="export-button">Соответствия</button>
+                        <button id="exportDiagramBtn" class="export-button">Диаграмма</button>
+                        <button id="fullscreenTargetBtn" class="fullscreen-button">⛶</button>
+                    </div>
+                </div>
+                <div id="targetEditor" class="editor"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Advanced Settings Modal -->
+	<div id="advancedModal" class="modal">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h2>Дополнительные настройки преобразования</h2>
+				<!-- Убрали кнопку закрытия с крестиком -->
+			</div>
+			
+			<div class="modal-sections">
+				<div class="modal-section">
+					<h4>Настройки геометрии</h4>
+					<div style="color: #64748b; font-style: italic;">
+						Настройки будут добавлены позже
+					</div>
+				</div>
+				<div class="modal-section">
+					<h4>Настройки свойств</h4>
+					<div style="color: #64748b; font-style: italic;">
+						Настройки будут добавлены позже
+					</div>
+				</div>
+			</div>
+			
+			<div class="modal-footer">
+				<button id="cancelSettingsBtn" class="cancel-button">Отменить</button>
+				<button id="saveSettingsBtn" class="save-button">Сохранить настройки</button>
+			</div>
+		</div>
+	</div>
+
+    <script src="/script.js"></script>
+</body>
+</html>
