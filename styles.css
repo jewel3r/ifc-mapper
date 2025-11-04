@@ -286,3 +286,152 @@ button:hover {
 .cancel-button:hover {
     background: #475569;
 }
+
+/* Стили для вкладок */
+.tabs-container {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.tabs-header {
+    display: flex;
+    background: #f1f5f9;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.tab-button {
+    background: none;
+    border: none;
+    padding: 10px 15px;
+    cursor: pointer;
+    color: var(--secondary-color);
+    border-bottom: 2px solid transparent;
+    transition: all 0.3s;
+}
+
+.tab-button:hover {
+    background: rgba(255, 255, 255, 0.5);
+    color: var(--primary-color);
+}
+
+.tab-button.active {
+    color: var(--primary-color);
+    border-bottom: 2px solid var(--primary-color);
+    background: white;
+}
+
+.tabs-content {
+    flex: 1;
+    position: relative;
+}
+
+.tab-pane {
+    display: none;
+    height: 100%;
+}
+
+.tab-pane.active {
+    display: block;
+}
+
+.tab-pane .editor {
+    height: 100%;
+}
+
+.mapping-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: white;
+}
+
+.mapping-header {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    padding: 15px 20px;
+    background: #f8fafc;
+    border-bottom: 2px solid var(--border-color);
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.source-header, .target-header {
+    padding: 0 10px;
+}
+
+.mapping-list {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.mapping-item {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border-color);
+    align-items: center;
+    transition: background-color 0.2s;
+}
+
+.mapping-item:hover {
+    background-color: #f8fafc;
+}
+
+.source-item {
+    padding: 0 10px;
+    font-weight: 500;
+    color: #334155;
+}
+
+.target-item {
+    padding: 0 10px;
+    display: flex;
+    gap: 8px;
+}
+
+.mapping-select {
+    flex: 1;
+    padding: 6px 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background: white;
+    font-size: 14px;
+}
+
+.mapping-input {
+    flex: 1;
+    padding: 6px 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.mapping-input:focus, .mapping-select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+}
+
+.no-mappings {
+    padding: 40px 20px;
+    text-align: center;
+    color: var(--secondary-color);
+    font-style: italic;
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 768px) {
+    .mapping-header, .mapping-item {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+    
+    .source-header, .target-header {
+        padding: 5px 0;
+    }
+    
+    .mapping-item {
+        padding: 15px 20px;
+    }
+}

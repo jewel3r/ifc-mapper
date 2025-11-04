@@ -63,55 +63,85 @@
 
             <!-- Только кнопка преобразования по центру -->
             <div class="conversion-panel">
-                <button id="convertBtn" class="convert-button">▶ Преобразовать в IFC</button>
+                <button id="convertBtn" class="convert-button">▶ Создать соответствия</button>
             </div>
 
             <!-- Правый редактор -->
             <div class="editor-panel">
                 <div class="panel-header">
-                    <h3>Результат IFC</h3>
+                    <h3>Результат преобразования</h3>
                     <div class="panel-actions">
-                        <button id="validateIfcBtn">Проверить IFC</button>
                         <button id="downloadBtn">Скачать IFC</button>
-                        <button id="exportMappingBtn" class="export-button">Соответствия</button>
-                        <button id="exportDiagramBtn" class="export-button">Диаграмма</button>
+                        <button id="exportMappingBtn" class="export-button">Экспорт соответствий</button>
                         <button id="fullscreenTargetBtn" class="fullscreen-button">⛶</button>
                     </div>
                 </div>
-                <div id="targetEditor" class="editor"></div>
+                <div class="tabs-container">
+                    <div class="tabs-header">
+                        <button class="tab-button active" data-tab="ifc-result">IFC Результат</button>
+                        <button class="tab-button" data-tab="class-mapping">Сопоставление классов</button>
+                        <button class="tab-button" data-tab="attribute-mapping">Сопоставление атрибутов</button>
+                    </div>
+                    <div class="tabs-content">
+                        <div id="ifc-result" class="tab-pane active">
+                            <div id="targetEditor" class="editor"></div>
+                        </div>
+                        <div id="class-mapping" class="tab-pane">
+                            <div class="mapping-container">
+                                <div class="mapping-header">
+                                    <span class="source-header">OWL Класс</span>
+                                    <span class="target-header">IFC Эквивалент</span>
+                                </div>
+                                <div id="classMappingList" class="mapping-list">
+                                    <!-- Сюда будут добавляться строки соответствий -->
+                                </div>
+                            </div>
+                        </div>
+                        <div id="attribute-mapping" class="tab-pane">
+                            <div class="mapping-container">
+                                <div class="mapping-header">
+                                    <span class="source-header">OWL Атрибут</span>
+                                    <span class="target-header">IFC Эквивалент</span>
+                                </div>
+                                <div id="attributeMappingList" class="mapping-list">
+                                    <!-- Сюда будут добавляться строки соответствий -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
     <!-- Advanced Settings Modal -->
-	<div id="advancedModal" class="modal">
-		<div class="modal-content">
-			<div class="modal-header">
-				<h2>Дополнительные настройки преобразования</h2>
-				<!-- Убрали кнопку закрытия с крестиком -->
-			</div>
-			
-			<div class="modal-sections">
-				<div class="modal-section">
-					<h4>Настройки</h4>
-					<div style="color: #64748b; font-style: italic;">
-						Настройки будут добавлены позже
-					</div>
-				</div>
-				<div class="modal-section">
-					<h4>Ещё настройки</h4>
-					<div style="color: #64748b; font-style: italic;">
-						Настройки будут добавлены позже
-					</div>
-				</div>
-			</div>
-			
-			<div class="modal-footer">
-				<button id="cancelSettingsBtn" class="cancel-button">Отменить</button>
-				<button id="saveSettingsBtn" class="save-button">Сохранить настройки</button>
-			</div>
-		</div>
-	</div>
+    <div id="advancedModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Дополнительные настройки преобразования</h2>
+            </div>
+            
+            <div class="modal-sections">
+                <div class="modal-section">
+                    <h4>Настройки</h4>
+                    <div style="color: #64748b; font-style: italic;">
+                        Настройки будут добавлены позже
+                    </div>
+                </div>
+                <div class="modal-section">
+                    <h4>Ещё настройки</h4>
+                    <div style="color: #64748b; font-style: italic;">
+                        Настройки будут добавлены позже
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button id="cancelSettingsBtn" class="cancel-button">Отменить</button>
+                <button id="saveSettingsBtn" class="save-button">Сохранить настройки</button>
+            </div>
+        </div>
+    </div>
 
     <script src="script.js"></script>
 </body>

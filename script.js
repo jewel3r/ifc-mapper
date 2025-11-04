@@ -5,12 +5,24 @@ class IfcModelMapper {
         this.targetEditor = null;
         this.currentMapping = null;
         this.isEditorsReady = false;
+        this.ifcClasses = [
+            'IfcProduct', 'IfcBuilding', 'IfcBuildingStorey', 'IfcSpace', 
+            'IfcWall', 'IfcDoor', 'IfcWindow', 'IfcSlab', 'IfcRoof',
+            'IfcBeam', 'IfcColumn', 'IfcFooting', 'IfcStair',
+            'IfcRamp', 'IfcRailing', 'IfcSystem', 'IfcDistributionElement'
+        ];
+        this.ifcAttributes = [
+            'Name', 'Description', 'ObjectType', 'OverallHeight', 'OverallWidth',
+            'OverallLength', 'GrossArea', 'NetArea', 'GrossVolume', 'NetVolume',
+            'Material', 'LoadBearing', 'IsExternal', 'FireRating', 'AcousticRating'
+        ];
         this.init();
     }
 
     init() {
         this.initEditors();
         this.bindEvents();
+        this.initTabs();
     }
 
     initEditors() {
@@ -27,7 +39,7 @@ class IfcModelMapper {
             });
 
             this.targetEditor = monaco.editor.create(document.getElementById('targetEditor'), {
-                value: '// IFC результат появится здесь\n// Вы можете редактировать сгенерированный IFC код',
+                value: '// IFC результат появится здесь после настройки соответствий',
                 language: 'plaintext',
                 theme: 'vs-light',
                 minimap: { enabled: false },
@@ -41,17 +53,46 @@ class IfcModelMapper {
         });
     }
 
+    initTabs() {
+        const tabButtons = document.querySelectorAll('.tab-button');
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const tabId = button.getAttribute('data-tab');
+                this.switchTab(tabId);
+            });
+        });
+    }
+
+    switchTab(tabId) {
+        // Обновляем активные кнопки вкладок
+        document.querySelectorAll('.tab-button').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
+
+        // Обновляем активные панели вкладок
+        document.querySelectorAll('.tab-pane').forEach(pane => {
+            pane.classList.remove('active');
+        });
+        document.getElementById(tabId).classList.add('active');
+
+        // Обновляем размеры редакторов
+        setTimeout(() => {
+            if (this.targetEditor) {
+                this.targetEditor.layout();
+            }
+        }, 100);
+    }
+
     bindEvents() {
         // Основные кнопки
         document.getElementById('convertBtn').addEventListener('click', () => this.convertToIfc());
         document.getElementById('fileInput').addEventListener('change', (e) => this.handleFileUpload(e));
         document.getElementById('detectTypeBtn').addEventListener('click', () => this.autoDetectType());
         document.getElementById('validateSourceBtn').addEventListener('click', () => this.validateSource());
-        document.getElementById('validateIfcBtn').addEventListener('click', () => this.validateIfc());
         document.getElementById('downloadBtn').addEventListener('click', () => this.downloadIfc());
         document.getElementById('formatSourceBtn').addEventListener('click', () => this.formatSource());
         document.getElementById('exportMappingBtn').addEventListener('click', () => this.exportMapping());
-        document.getElementById('exportDiagramBtn').addEventListener('click', () => this.exportDiagram());
         
         // Полноэкранный режим
         document.getElementById('fullscreenSourceBtn').addEventListener('click', () => this.toggleFullscreen('source'));
@@ -61,22 +102,9 @@ class IfcModelMapper {
         document.getElementById('advancedSettingsBtn').addEventListener('click', () => this.showAdvancedSettings());
         document.getElementById('saveSettingsBtn').addEventListener('click', () => this.saveAdvancedSettings());
         document.getElementById('cancelSettingsBtn').addEventListener('click', () => this.hideAdvancedSettings());
-        
-        // Закрытие модального окна
-        document.getElementById('advancedModal').addEventListener('click', (e) => {
-            if (e.target.id === 'advancedModal') {
-                this.hideAdvancedSettings();
-            }
-        });
-        
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && document.getElementById('advancedModal').style.display === 'block') {
-                this.hideAdvancedSettings();
-            }
-        });
     }
 
-    // Методы для уведомлений
+    // Методы для уведомлений (остаются без изменений)
     showSuccess(message) {
         this.showNotification(message, 'success');
     }
@@ -90,7 +118,6 @@ class IfcModelMapper {
     }
 
     showNotification(message, type = 'info') {
-        // Удаляем предыдущие уведомления
         const existingNotification = document.querySelector('.notification');
         if (existingNotification) {
             existingNotification.remove();
@@ -100,7 +127,6 @@ class IfcModelMapper {
         notification.className = `notification notification-${type}`;
         notification.textContent = message;
         
-        // Стили для уведомления
         notification.style.cssText = `
             position: fixed;
             top: 20px;
@@ -115,7 +141,6 @@ class IfcModelMapper {
             animation: slideIn 0.3s ease-out;
         `;
 
-        // Цвета в зависимости от типа
         const colors = {
             success: '#10b981',
             error: '#ef4444',
@@ -123,23 +148,14 @@ class IfcModelMapper {
         };
         
         notification.style.background = colors[type] || colors.info;
-
         document.body.appendChild(notification);
 
-        // Автоматическое скрытие через 3 секунды
         setTimeout(() => {
             if (notification.parentNode) {
                 notification.style.animation = 'slideOut 0.3s ease-in';
                 setTimeout(() => notification.remove(), 300);
             }
         }, 3000);
-    }
-
-    hideSuccess() {
-        const notification = document.querySelector('.notification');
-        if (notification) {
-            notification.remove();
-        }
     }
 
     autoDetectType() {
@@ -211,92 +227,11 @@ class IfcModelMapper {
     }
 
     validateSource() {
-        if (!this.isEditorsReady) {
-            this.showError('Редакторы еще не загружены');
-            return;
-        }
-
-		this.showInfo('Валидация еще не реализована');
-		return;
-
-        const sourceCode = this.sourceEditor.getValue();
-        const sourceType = document.getElementById('sourceType').value;
-        
-        if (!sourceCode.trim()) {
-            this.showError('Исходная модель пуста');
-            return;
-        }
-        
-        try {
-            this.parseSourceModel(sourceCode, sourceType);
-            this.showSuccess('Исходная модель корректна');
-        } catch (error) {
-            this.showError(`Ошибка проверки: ${error.message}`);
-        }
-    }
-
-    validateIfc() {
-        if (!this.isEditorsReady) {
-            this.showError('Редакторы еще не загружены');
-            return;
-        }
-		
-		this.showInfo('Валидация еще не реализована');
-		return;
-
-        const ifcCode = this.targetEditor.getValue();
-        
-        if (!ifcCode.trim() || ifcCode.includes('// IFC результат появится здесь')) {
-            this.showError('IFC код еще не сгенерирован');
-            return;
-        }
-
-        if (!ifcCode.includes('ISO-10303-21') || !ifcCode.includes('ENDSEC;')) {
-            this.showError('Неверный формат IFC');
-            return;
-        }
-        this.showSuccess('Синтаксис IFC корректен');
+        this.showInfo('Валидация еще не реализована');
     }
 
     formatSource() {
-        if (!this.isEditorsReady) {
-            this.showError('Редакторы еще не загружены');
-            return;
-        }
-
-        const sourceCode = this.sourceEditor.getValue();
-        const sourceType = document.getElementById('sourceType').value;
-        
-        if (!sourceCode.trim()) {
-            this.showError('Исходная модель пуста');
-            return;
-        }
-        
-		this.showInfo('Форматирование еще не реализовано')
-		return;
-		
-        try {
-            let formattedCode = sourceCode;
-            
-            if (sourceType === 'owl') {
-                formattedCode = sourceCode
-                    .split('\n')
-                    .map(line => line.trim())
-                    .filter(line => line.length > 0)
-                    .map((line, index) => {
-                        if (index === 0) return line;
-                        if (line.startsWith('@prefix') || line.startsWith('PREFIX')) return '\n' + line;
-                        if (line.endsWith('.')) return '    ' + line;
-                        return '    ' + line;
-                    })
-                    .join('\n');
-            }
-            
-            this.sourceEditor.setValue(formattedCode);
-            this.showSuccess('Код отформатирован');
-        } catch (error) {
-            this.showError('Ошибка форматирования');
-        }
+        this.showInfo('Форматирование еще не реализовано');
     }
 
     convertToIfc() {
@@ -313,30 +248,20 @@ class IfcModelMapper {
             return;
         }
         
-		this.showInfo(`Маппинг еще не реализован`);
-		return;
-		
         try {
             // Парсинг исходной модели
             const sourceModel = this.parseSourceModel(sourceCode, sourceType);
             
-            // Создание маппинга
-            this.currentMapping = this.createMapping(sourceModel);
+            // Создание и отображение маппинга
+            this.createAndDisplayMapping(sourceModel);
             
-            // Генерация IFC
-            const ifcCode = this.generateIfc(sourceModel);
-            
-            // Обновление целевого редактора
-            this.targetEditor.setValue(ifcCode);
-            
-            this.showSuccess('Преобразование в IFC завершено успешно!');
+            this.showSuccess('Соответствия сгенерированы! Настройте маппинг и экспортируйте результат.');
             
         } catch (error) {
             this.showError(`Ошибка преобразования: ${error.message}`);
         }
     }
 
-    // Остальные методы остаются без изменений...
     parseSourceModel(sourceCode, sourceType) {
         switch (sourceType) {
             case 'owl':
@@ -396,152 +321,226 @@ class IfcModelMapper {
         };
     }
 
-    createMapping(sourceModel) {
-        const mapping = {
+    createAndDisplayMapping(sourceModel) {
+        // Создаем объект маппинга
+        this.currentMapping = {
             sourceType: sourceModel.type,
-            elements: []
+            classMappings: [],
+            attributeMappings: [],
+            timestamp: new Date().toISOString()
         };
 
-        if (sourceModel.classes) {
+        // Заполняем маппинг классов
+        if (sourceModel.classes && sourceModel.classes.length > 0) {
             sourceModel.classes.forEach(cls => {
-                mapping.elements.push({
-                    source: `OWL Class: ${cls.name}`,
-                    target: this.mapClassToIfc(cls),
+                const defaultMapping = this.getDefaultClassMapping(cls.name);
+                this.currentMapping.classMappings.push({
+                    source: cls.name,
+                    target: defaultMapping,
                     type: 'class'
                 });
             });
         }
 
-        if (sourceModel.properties) {
+        // Заполняем маппинг атрибутов
+        if (sourceModel.properties && sourceModel.properties.length > 0) {
             sourceModel.properties.forEach(prop => {
-                mapping.elements.push({
-                    source: `OWL Property: ${prop.name}`,
-                    target: this.mapPropertyToIfc(prop),
-                    type: 'property'
+                const defaultMapping = this.getDefaultAttributeMapping(prop.name);
+                this.currentMapping.attributeMappings.push({
+                    source: prop.name,
+                    target: defaultMapping,
+                    type: 'attribute'
                 });
             });
         }
 
-        return mapping;
+        // Отображаем маппинг в интерфейсе
+        this.displayClassMapping();
+        this.displayAttributeMapping();
+
+        // Переключаемся на вкладку классов
+        this.switchTab('class-mapping');
     }
 
-    mapClassToIfc(owlClass) {
-        const classMapping = {
+    getDefaultClassMapping(className) {
+        const defaultMappings = {
             'Building': 'IfcBuilding',
             'Wall': 'IfcWall',
             'Door': 'IfcDoor',
             'Window': 'IfcWindow',
-            'Space': 'IfcSpace'
+            'Space': 'IfcSpace',
+            'Floor': 'IfcSlab',
+            'Roof': 'IfcRoof',
+            'Beam': 'IfcBeam',
+            'Column': 'IfcColumn'
         };
-
-        return {
-            ifcType: classMapping[owlClass.name] || 'IfcProduct',
-            ifcName: owlClass.name
-        };
+        return defaultMappings[className] || 'IfcProduct';
     }
 
-    mapPropertyToIfc(owlProperty) {
-        return {
-            ifcType: 'IfcPropertySet',
-            ifcName: owlProperty.name.toUpperCase()
+    getDefaultAttributeMapping(attributeName) {
+        const defaultMappings = {
+            'hasHeight': 'OverallHeight',
+            'hasMaterial': 'Material',
+            'hasWidth': 'OverallWidth',
+            'hasLength': 'OverallLength',
+            'hasArea': 'GrossArea',
+            'hasVolume': 'GrossVolume'
         };
+        return defaultMappings[attributeName] || attributeName.toUpperCase();
     }
 
-    generateIfc(sourceModel) {
-        let ifcCode = `ISO-10303-21;
-HEADER;
-FILE_DESCRIPTION(('Модель из ${sourceModel.type}'), '2;1');
-FILE_NAME('${sourceModel.type}_converted.ifc', '${new Date().toISOString()}', ('Конвертер'), ('IFC Model Mapper'), '');
-FILE_SCHEMA(('IFC4X3'));
-ENDSEC;
+    displayClassMapping() {
+        const container = document.getElementById('classMappingList');
+        container.innerHTML = '';
 
-DATA;
-`;
-
-        ifcCode += this.generateIfcEntities(sourceModel);
-        
-        ifcCode += `ENDSEC;
-END-ISO-10303-21;`;
-
-        return ifcCode;
-    }
-
-    generateIfcEntities(sourceModel) {
-        let entities = '';
-        
-        entities += `#1=IFCPROJECT('${this.generateGuid()}',#2,'Проект из ${sourceModel.type}',$,$,$,$,(#6),#7);\n`;
-        entities += `#2=IFCOWNERHISTORY(#3,#6,#7,.NOCHANGE.,$);\n`;
-        entities += `#3=IFCPERSONANDORGANIZATION(#4,#5,$);\n`;
-        entities += `#4=IFCPERSON($,'Авто','Сгенерировано',$,$,$,$,$);\n`;
-        entities += `#5=IFCORGANIZATION($,'IFC Model Mapper','Автоматически сгенерировано',$,$);\n`;
-        
-        if (sourceModel.classes) {
-            sourceModel.classes.forEach((cls, index) => {
-                const ifcType = this.mapClassToIfc(cls).ifcType;
-                entities += `#${index + 10}=${ifcType}('${this.generateGuid()}',#2,'${cls.name}',$,$);\n`;
-            });
+        if (this.currentMapping.classMappings.length === 0) {
+            container.innerHTML = '<div class="no-mappings">Классы не найдены в исходной модели</div>';
+            return;
         }
-        
-        return entities;
+
+        this.currentMapping.classMappings.forEach((mapping, index) => {
+            const item = document.createElement('div');
+            item.className = 'mapping-item';
+            item.innerHTML = `
+                <div class="source-item">${mapping.source}</div>
+                <div class="target-item">
+                    <select class="mapping-select" data-index="${index}" data-type="class">
+                        ${this.ifcClasses.map(cls => 
+                            `<option value="${cls}" ${cls === mapping.target ? 'selected' : ''}>${cls}</option>`
+                        ).join('')}
+                        <option value="custom">-- Другое --</option>
+                    </select>
+                    <input type="text" class="mapping-input" 
+                           value="${!this.ifcClasses.includes(mapping.target) ? mapping.target : ''}" 
+                           placeholder="Введите IFC класс" 
+                           style="${this.ifcClasses.includes(mapping.target) ? 'display:none' : ''}">
+                </div>
+            `;
+            container.appendChild(item);
+        });
+
+        // Добавляем обработчики событий
+        this.bindMappingEvents('class');
     }
 
-    generateGuid() {
-        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-            const r = Math.random() * 16 | 0;
-            const v = c == 'x' ? r : (r & 0x3 | 0x8);
-            return v.toString(16);
+    displayAttributeMapping() {
+        const container = document.getElementById('attributeMappingList');
+        container.innerHTML = '';
+
+        if (this.currentMapping.attributeMappings.length === 0) {
+            container.innerHTML = '<div class="no-mappings">Атрибуты не найдены в исходной модели</div>';
+            return;
+        }
+
+        this.currentMapping.attributeMappings.forEach((mapping, index) => {
+            const item = document.createElement('div');
+            item.className = 'mapping-item';
+            item.innerHTML = `
+                <div class="source-item">${mapping.source}</div>
+                <div class="target-item">
+                    <select class="mapping-select" data-index="${index}" data-type="attribute">
+                        <option value="">-- Выберите атрибут --</option>
+                        ${this.ifcAttributes.map(attr => 
+                            `<option value="${attr}" ${attr === mapping.target ? 'selected' : ''}>${attr}</option>`
+                        ).join('')}
+                        <option value="custom" ${!this.ifcAttributes.includes(mapping.target) ? 'selected' : ''}>-- Другое --</option>
+                    </select>
+                    <input type="text" class="mapping-input" 
+                           value="${!this.ifcAttributes.includes(mapping.target) ? mapping.target : ''}" 
+                           placeholder="Введите IFC атрибут"
+                           style="${this.ifcAttributes.includes(mapping.target) ? 'display:none' : ''}">
+                </div>
+            `;
+            container.appendChild(item);
+        });
+
+        // Добавляем обработчики событий
+        this.bindMappingEvents('attribute');
+    }
+
+    bindMappingEvents(type) {
+        const selects = document.querySelectorAll(`.mapping-select[data-type="${type}"]`);
+        const inputs = document.querySelectorAll(`.mapping-input`);
+
+        selects.forEach(select => {
+            select.addEventListener('change', (e) => {
+                const index = parseInt(e.target.getAttribute('data-index'));
+                const input = e.target.parentNode.querySelector('.mapping-input');
+                
+                if (e.target.value === 'custom') {
+                    input.style.display = 'block';
+                    input.focus();
+                } else {
+                    input.style.display = 'none';
+                    this.updateMapping(type, index, e.target.value);
+                }
+            });
+        });
+
+        inputs.forEach(input => {
+            input.addEventListener('input', (e) => {
+                const select = e.target.parentNode.querySelector('.mapping-select');
+                const index = parseInt(select.getAttribute('data-index'));
+                this.updateMapping(type, index, e.target.value);
+            });
+
+            input.addEventListener('blur', (e) => {
+                if (!e.target.value.trim()) {
+                    const select = e.target.parentNode.querySelector('.mapping-select');
+                    select.value = '';
+                    e.target.style.display = 'none';
+                }
+            });
         });
     }
 
-    downloadIfc() {
-        if (!this.isEditorsReady) {
-            this.showError('Редакторы еще не загружены');
-            return;
+    updateMapping(type, index, value) {
+        if (type === 'class') {
+            this.currentMapping.classMappings[index].target = value;
+        } else {
+            this.currentMapping.attributeMappings[index].target = value;
         }
-
-        const ifcCode = this.targetEditor.getValue();
-        
-        if (!ifcCode.trim() || ifcCode.includes('// IFC результат появится здесь')) {
-            this.showError('Нет IFC кода для скачивания');
-            return;
-        }
-
-        const blob = new Blob([ifcCode], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'converted_model.ifc';
-        a.click();
-        URL.revokeObjectURL(url);
-        this.showSuccess('IFC файл скачан');
     }
 
     exportMapping() {
         if (!this.currentMapping) {
-            this.showError('Сначала выполните преобразование');
+            this.showError('Сначала выполните преобразование для создания маппинга');
             return;
         }
         
-        let mappingText = "Соответствия OWL → IFC\n";
+        let mappingText = "СООТВЕТСТВИЯ OWL → IFC\n";
         mappingText += "========================\n\n";
+        mappingText += `Дата создания: ${new Date().toLocaleString()}\n`;
+        mappingText += `Тип исходной модели: ${this.currentMapping.sourceType}\n\n`;
         
-        this.currentMapping.elements.forEach(item => {
-            mappingText += `${item.source} → ${item.target.ifcType}\n`;
+        mappingText += "СОПОСТАВЛЕНИЕ КЛАССОВ:\n";
+        mappingText += "---------------------\n";
+        this.currentMapping.classMappings.forEach((item, index) => {
+            mappingText += `${index + 1}. ${item.source} → ${item.target}\n`;
         });
         
-        const blob = new Blob([mappingText], { type: 'text/plain' });
+        mappingText += "\nСОПОСТАВЛЕНИЕ АТРИБУТОВ:\n";
+        mappingText += "-----------------------\n";
+        this.currentMapping.attributeMappings.forEach((item, index) => {
+            mappingText += `${index + 1}. ${item.source} → ${item.target}\n`;
+        });
+        
+        mappingText += `\nВсего классов: ${this.currentMapping.classMappings.length}`;
+        mappingText += `\nВсего атрибутов: ${this.currentMapping.attributeMappings.length}`;
+        
+        const blob = new Blob([mappingText], { type: 'text/plain; charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'mapping_correspondence.txt';
+        a.download = `mapping_${new Date().toISOString().split('T')[0]}.txt`;
         a.click();
         URL.revokeObjectURL(url);
         
         this.showSuccess('Соответствия экспортированы в файл');
     }
 
-    exportDiagram() {
-        this.showInfo('Экспорт диаграммы будет реализован в будущей версии');
+    downloadIfc() {
+        this.showInfo('Генерация IFC будет реализована в следующей версии');
     }
 
     toggleFullscreen(editorType) {
@@ -589,7 +588,12 @@ END-ISO-10303-21;`;
     }
 }
 
-// Добавляем стили для анимаций
+// Инициализация приложения
+document.addEventListener('DOMContentLoaded', () => {
+    new IfcModelMapper();
+});
+
+// Добавляем CSS анимации для уведомлений
 const style = document.createElement('style');
 style.textContent = `
     @keyframes slideIn {
@@ -603,8 +607,3 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
-
-// Инициализация приложения
-document.addEventListener('DOMContentLoaded', () => {
-    new IfcModelMapper();
-});
