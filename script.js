@@ -30,7 +30,7 @@ class IfcModelMapper {
         
         require(['vs/editor/editor.main'], () => {
             this.sourceEditor = monaco.editor.create(document.getElementById('sourceEditor'), {
-                value: '// Вставьте вашу исходную модель здесь\n// Поддерживаемые форматы: OWL Turtle, OWL RDF/XML\n\n@prefix : <http://example.org/ontology#> .\n@prefix owl: <http://www.w3.org/2002/07/owl#> .\n@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .\n@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .\n\n:Building a owl:Class .\n:Wall a owl:Class .\n:Door a owl:Class .\n\n:hasHeight a owl:DatatypeProperty .\n:hasMaterial a owl:ObjectProperty .',
+                value: '// Вставьте вашу исходную модель здесь\n// Поддерживаемые форматы: OWL Turtle, OWL RDF/XML\n\n@prefix : <http://example.org/ontology#> .\n@prefix owl: <http://www.w3.org/2002/07/owl#> .\n@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .\n@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .\n\n:Building a owl:Class ;\n    rdfs:label "Здание"@ru .\n:Wall a owl:Class ;\n    rdfs:label "Стена"@ru .\n:Door a owl:Class ;\n    rdfs:label "Дверь"@ru .\n\n:hasHeight a owl:DatatypeProperty ;\n    rdfs:label "Высота"@ru .\n:hasMaterial a owl:ObjectProperty ;\n    rdfs:label "Материал"@ru .',
                 language: 'turtle',
                 theme: 'vs-light',
                 minimap: { enabled: false },
@@ -64,19 +64,16 @@ class IfcModelMapper {
     }
 
     switchTab(tabId) {
-        // Обновляем активные кнопки вкладок
         document.querySelectorAll('.tab-button').forEach(btn => {
             btn.classList.remove('active');
         });
         document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
 
-        // Обновляем активные панели вкладок
         document.querySelectorAll('.tab-pane').forEach(pane => {
             pane.classList.remove('active');
         });
         document.getElementById(tabId).classList.add('active');
 
-        // Обновляем размеры редакторов
         setTimeout(() => {
             if (this.targetEditor) {
                 this.targetEditor.layout();
@@ -85,7 +82,6 @@ class IfcModelMapper {
     }
 
     bindEvents() {
-        // Основные кнопки
         document.getElementById('convertBtn').addEventListener('click', () => this.convertToIfc());
         document.getElementById('fileInput').addEventListener('change', (e) => this.handleFileUpload(e));
         document.getElementById('detectTypeBtn').addEventListener('click', () => this.autoDetectType());
@@ -94,17 +90,14 @@ class IfcModelMapper {
         document.getElementById('formatSourceBtn').addEventListener('click', () => this.formatSource());
         document.getElementById('exportMappingBtn').addEventListener('click', () => this.exportMapping());
         
-        // Полноэкранный режим
         document.getElementById('fullscreenSourceBtn').addEventListener('click', () => this.toggleFullscreen('source'));
         document.getElementById('fullscreenTargetBtn').addEventListener('click', () => this.toggleFullscreen('target'));
         
-        // Модальное окно
         document.getElementById('advancedSettingsBtn').addEventListener('click', () => this.showAdvancedSettings());
         document.getElementById('saveSettingsBtn').addEventListener('click', () => this.saveAdvancedSettings());
         document.getElementById('cancelSettingsBtn').addEventListener('click', () => this.hideAdvancedSettings());
     }
 
-    // Методы для уведомлений (остаются без изменений)
     showSuccess(message) {
         this.showNotification(message, 'success');
     }
@@ -249,12 +242,8 @@ class IfcModelMapper {
         }
         
         try {
-            // Парсинг исходной модели
             const sourceModel = this.parseSourceModel(sourceCode, sourceType);
-            
-            // Создание и отображение маппинга
             this.createAndDisplayMapping(sourceModel);
-            
             this.showSuccess('Соответствия сгенерированы! Настройте маппинг и экспортируйте результат.');
             
         } catch (error) {
@@ -281,7 +270,8 @@ class IfcModelMapper {
         while ((match = classRegex.exec(turtleCode)) !== null) {
             classes.push({
                 name: match[1],
-                type: 'Class'
+                type: 'Class',
+                label: this.extractLabel(turtleCode, match[1])
             });
         }
 
@@ -291,7 +281,8 @@ class IfcModelMapper {
         while ((match = propRegex.exec(turtleCode)) !== null) {
             properties.push({
                 name: match[1],
-                type: match[2]
+                type: match[2],
+                label: this.extractLabel(turtleCode, match[1])
             });
         }
         
@@ -302,18 +293,49 @@ class IfcModelMapper {
         };
     }
 
+    extractLabel(turtleCode, elementName) {
+        const labelPatterns = [
+            new RegExp(`:${elementName}[^.]*rdfs:label\\s+"([^"]*)"@ru`, 'g'),
+            new RegExp(`:${elementName}[^.]*rdfs:label\\s+"([^"]*)"@en`, 'g'),
+            new RegExp(`:${elementName}[^.]*rdfs:label\\s+"([^"]*)"`, 'g'),
+            new RegExp(`:${elementName}[^.]*#\\s*([^\\n]+)`, 'g')
+        ];
+
+        for (const pattern of labelPatterns) {
+            const match = pattern.exec(turtleCode);
+            if (match && match[1]) {
+                return match[1].trim();
+            }
+        }
+
+        return this.generateReadableName(elementName);
+    }
+
+    generateReadableName(technicalName) {
+        return technicalName
+            .replace(/([A-Z])/g, ' $1')
+            .replace(/_/g, ' ')
+            .replace(/^\w/, c => c.toUpperCase())
+            .trim();
+    }
+
     parseOwlRdf(rdfCode) {
         const classes = [];
-        const classRegex = /<owl:Class rdf:ID="(\w+)">/g;
+        
+        const classRegex = /<owl:Class rdf:ID="(\w+)">([\s\S]*?)<\/owl:Class>/g;
         let match;
         
         while ((match = classRegex.exec(rdfCode)) !== null) {
+            const classBlock = match[0];
+            const labelMatch = /<rdfs:label[^>]*>([^<]+)<\/rdfs:label>/.exec(classBlock);
+            
             classes.push({
                 name: match[1],
-                type: 'Class'
+                type: 'Class',
+                label: labelMatch ? labelMatch[1] : this.generateReadableName(match[1])
             });
         }
-        
+
         return {
             type: 'owl-rdf',
             classes: classes,
@@ -322,7 +344,6 @@ class IfcModelMapper {
     }
 
     createAndDisplayMapping(sourceModel) {
-        // Создаем объект маппинга
         this.currentMapping = {
             sourceType: sourceModel.type,
             classMappings: [],
@@ -330,35 +351,32 @@ class IfcModelMapper {
             timestamp: new Date().toISOString()
         };
 
-        // Заполняем маппинг классов
         if (sourceModel.classes && sourceModel.classes.length > 0) {
             sourceModel.classes.forEach(cls => {
                 const defaultMapping = this.getDefaultClassMapping(cls.name);
                 this.currentMapping.classMappings.push({
                     source: cls.name,
                     target: defaultMapping,
+                    label: cls.label, // Сохраняем лейбл
                     type: 'class'
                 });
             });
         }
 
-        // Заполняем маппинг атрибутов
         if (sourceModel.properties && sourceModel.properties.length > 0) {
             sourceModel.properties.forEach(prop => {
                 const defaultMapping = this.getDefaultAttributeMapping(prop.name);
                 this.currentMapping.attributeMappings.push({
                     source: prop.name,
                     target: defaultMapping,
+                    label: prop.label, // Сохраняем лейбл
                     type: 'attribute'
                 });
             });
         }
 
-        // Отображаем маппинг в интерфейсе
         this.displayClassMapping();
         this.displayAttributeMapping();
-
-        // Переключаемся на вкладку классов
         this.switchTab('class-mapping');
     }
 
@@ -401,8 +419,14 @@ class IfcModelMapper {
         this.currentMapping.classMappings.forEach((mapping, index) => {
             const item = document.createElement('div');
             item.className = 'mapping-item';
+            
+            const displayName = mapping.label || this.generateReadableName(mapping.source);
+            
             item.innerHTML = `
-                <div class="source-item">${mapping.source}</div>
+                <div class="source-item">
+                    <div class="element-name">${displayName}</div>
+                    <div class="element-technical">${mapping.source}</div>
+                </div>
                 <div class="target-item">
                     <select class="mapping-select" data-index="${index}" data-type="class">
                         ${this.ifcClasses.map(cls => 
@@ -419,7 +443,6 @@ class IfcModelMapper {
             container.appendChild(item);
         });
 
-        // Добавляем обработчики событий
         this.bindMappingEvents('class');
     }
 
@@ -435,8 +458,14 @@ class IfcModelMapper {
         this.currentMapping.attributeMappings.forEach((mapping, index) => {
             const item = document.createElement('div');
             item.className = 'mapping-item';
+            
+            const displayName = mapping.label || this.generateReadableName(mapping.source);
+            
             item.innerHTML = `
-                <div class="source-item">${mapping.source}</div>
+                <div class="source-item">
+                    <div class="element-name">${displayName}</div>
+                    <div class="element-technical">${mapping.source}</div>
+                </div>
                 <div class="target-item">
                     <select class="mapping-select" data-index="${index}" data-type="attribute">
                         <option value="">-- Выберите атрибут --</option>
@@ -454,7 +483,6 @@ class IfcModelMapper {
             container.appendChild(item);
         });
 
-        // Добавляем обработчики событий
         this.bindMappingEvents('attribute');
     }
 
@@ -516,13 +544,15 @@ class IfcModelMapper {
         mappingText += "СОПОСТАВЛЕНИЕ КЛАССОВ:\n";
         mappingText += "---------------------\n";
         this.currentMapping.classMappings.forEach((item, index) => {
-            mappingText += `${index + 1}. ${item.source} → ${item.target}\n`;
+            const displayName = item.label || this.generateReadableName(item.source);
+            mappingText += `${index + 1}. ${displayName} (${item.source}) → ${item.target}\n`;
         });
         
         mappingText += "\nСОПОСТАВЛЕНИЕ АТРИБУТОВ:\n";
         mappingText += "-----------------------\n";
         this.currentMapping.attributeMappings.forEach((item, index) => {
-            mappingText += `${index + 1}. ${item.source} → ${item.target}\n`;
+            const displayName = item.label || this.generateReadableName(item.source);
+            mappingText += `${index + 1}. ${displayName} (${item.source}) → ${item.target}\n`;
         });
         
         mappingText += `\nВсего классов: ${this.currentMapping.classMappings.length}`;
