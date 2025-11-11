@@ -19,6 +19,7 @@ body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background-color: var(--bg-color);
     color: #334155;
+    min-width: 320px;
 }
 
 .app-container {
@@ -27,6 +28,7 @@ body {
     height: 100vh;
     padding: 20px;
     gap: 20px;
+    min-height: 600px;
 }
 
 .app-header {
@@ -35,9 +37,9 @@ body {
     background: var(--panel-bg);
     border-radius: 10px;
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    padding: 15px 20px;
 }
 
-/* Control Panel */
 .control-panel {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
@@ -60,16 +62,15 @@ body {
     border-radius: 5px;
 }
 
-/* ОСНОВНАЯ ОБЛАСТЬ - 3 КОЛОНКИ */
 .main-content {
     display: grid;
     grid-template-columns: 1fr auto 1fr;
     gap: 20px;
     flex: 1;
     min-height: 500px;
+    min-height: 400px;
 }
 
-/* Левый и правый редакторы */
 .editor-panel {
     display: flex;
     flex-direction: column;
@@ -78,9 +79,9 @@ body {
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     overflow: hidden;
     transition: all 0.3s ease;
+    min-height: 400px;
 }
 
-/* Стили для полноэкранного режима */
 .editor-panel.fullscreen {
     position: fixed;
     top: 0;
@@ -99,23 +100,32 @@ body {
     padding: 15px 20px;
     background: #f1f5f9;
     border-bottom: 1px solid var(--border-color);
+    padding: 12px 15px;
+    min-height: 50px;
 }
 
 .panel-actions {
     display: flex;
-    gap: 8px;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.panel-actions button {
+    font-size: 11px;
+    padding: 5px 8px;
+    white-space: nowrap;
 }
 
 .editor {
     flex: 1;
-    min-height: 400px;
+    min-height: 300px;
 }
 
-/* Кнопка полноэкранного режима */
 .fullscreen-button {
     background: var(--warning-color);
-    font-size: 14px;
-    padding: 6px 10px;
+    font-size: 12px;
+    padding: 5px 8px;
     border: none;
     border-radius: 4px;
     color: white;
@@ -127,20 +137,19 @@ body {
     background: #d97706;
 }
 
-/* ЦЕНТРАЛЬНАЯ ПАНЕЛЬ - ТОЛЬКО КНОПКА */
 .conversion-panel {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 0 20px;
+    padding: 0 15px;
 }
 
 .convert-button {
     background: var(--success-color);
-    font-size: 18px;
-    padding: 20px 40px;
+    font-size: 16px;
+    padding: 15px 25px;
     border: none;
-    border-radius: 10px;
+    border-radius: 8px;
     color: white;
     cursor: pointer;
     transition: background 0.3s;
@@ -151,16 +160,8 @@ body {
     background: #059669;
 }
 
-/* Стили для кнопок экспорта в панели */
 .export-button {
     background: var(--secondary-color);
-    font-size: 11px;
-    padding: 6px 10px;
-    border: none;
-    border-radius: 4px;
-    color: white;
-    cursor: pointer;
-    transition: background 0.3s;
 }
 
 .export-button:hover {
@@ -168,10 +169,10 @@ body {
 }
 
 select, input, button {
-    padding: 8px 12px;
+    padding: 6px 10px;
     border: 1px solid var(--border-color);
     border-radius: 5px;
-    font-size: 14px;
+    font-size: 13px;
 }
 
 button {
@@ -186,7 +187,6 @@ button:hover {
     background: #1d4ed8;
 }
 
-/* Modal Styles */
 .modal {
     display: none;
     position: fixed;
@@ -205,9 +205,9 @@ button:hover {
     transform: translate(-50%, -50%);
     background: white;
     border-radius: 10px;
-    min-width: 500px;
-    max-width: 90vw;
-    max-height: 90vh;
+    min-width: 400px;
+    max-width: 95vw;
+    max-height: 95vh;
     overflow-y: auto;
 }
 
@@ -215,19 +215,19 @@ button:hover {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 20px 30px 10px 30px;
+    padding: 15px 20px 10px 20px;
     border-bottom: 1px solid var(--border-color);
 }
 
 .close-modal {
     background: none;
     border: none;
-    font-size: 24px;
+    font-size: 20px;
     cursor: pointer;
     color: var(--secondary-color);
     padding: 0;
-    width: 30px;
-    height: 30px;
+    width: 25px;
+    height: 25px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -241,21 +241,21 @@ button:hover {
 .modal-sections {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 20px;
-    margin: 20px 30px;
+    gap: 15px;
+    margin: 15px 20px;
 }
 
 .modal-section {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
 }
 
 .modal-footer {
     display: flex;
     justify-content: flex-end;
-    gap: 10px;
-    padding: 20px 30px;
+    gap: 8px;
+    padding: 15px 20px;
     border-top: 1px solid var(--border-color);
     background: #f8fafc;
     border-radius: 0 0 10px 10px;
@@ -263,11 +263,7 @@ button:hover {
 
 .save-button {
     background: var(--success-color);
-    padding: 10px 20px;
-    border: none;
-    border-radius: 5px;
-    color: white;
-    cursor: pointer;
+    padding: 8px 16px;
 }
 
 .save-button:hover {
@@ -276,38 +272,37 @@ button:hover {
 
 .cancel-button {
     background: var(--secondary-color);
-    padding: 10px 20px;
-    border: none;
-    border-radius: 5px;
-    color: white;
-    cursor: pointer;
+    padding: 8px 16px;
 }
 
 .cancel-button:hover {
     background: #475569;
 }
 
-/* Стили для вкладок */
 .tabs-container {
     display: flex;
     flex-direction: column;
     flex: 1;
+    min-height: 300px;
 }
 
 .tabs-header {
     display: flex;
     background: #f1f5f9;
     border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
 }
 
 .tab-button {
     background: none;
     border: none;
-    padding: 10px 15px;
+    padding: 8px 12px;
     cursor: pointer;
     color: var(--secondary-color);
     border-bottom: 2px solid transparent;
     transition: all 0.3s;
+    font-size: 13px;
+    white-space: nowrap;
 }
 
 .tab-button:hover {
@@ -324,19 +319,26 @@ button:hover {
 .tabs-content {
     flex: 1;
     position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
 }
 
 .tab-pane {
     display: none;
     height: 100%;
+    flex: 1;
+    overflow: hidden;
 }
 
 .tab-pane.active {
-    display: block;
+    display: flex;
+    flex-direction: column;
 }
 
 .tab-pane .editor {
     height: 100%;
+    flex: 1;
 }
 
 .mapping-container {
@@ -344,33 +346,44 @@ button:hover {
     flex-direction: column;
     height: 100%;
     background: white;
+    min-height: 200px;
+    overflow: hidden;
 }
 
 .mapping-header {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    padding: 15px 20px;
+    grid-template-columns: 1fr 1fr 80px;
+    padding: 12px 15px;
     background: #f8fafc;
     border-bottom: 2px solid var(--border-color);
     font-weight: 600;
     color: var(--primary-color);
+    font-size: 13px;
+    flex-shrink: 0;
 }
 
-.source-header, .target-header {
-    padding: 0 10px;
+.source-header, .target-header, .verified-header {
+    padding: 0 8px;
+}
+
+.verified-header {
+    text-align: center;
 }
 
 .mapping-list {
     flex: 1;
     overflow-y: auto;
+    overflow-x: hidden;
+    min-height: 150px;
 }
 
 .mapping-item {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    padding: 12px 20px;
+    grid-template-columns: 1fr 1fr 80px;
+    padding: 12px 15px;
     border-bottom: 1px solid var(--border-color);
     align-items: center;
+    min-height: 60px;
     transition: background-color 0.2s;
 }
 
@@ -379,87 +392,303 @@ button:hover {
 }
 
 .source-item {
-    padding: 0 10px;
+    padding: 0 8px;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 3px;
 }
 
 .element-name {
     font-weight: 600;
     color: #334155;
-    font-size: 14px;
+    font-size: 13px;
 }
 
 .element-technical {
-    font-size: 12px;
+    font-size: 11px;
     color: #64748b;
     font-family: 'Monaco', 'Consolas', monospace;
     background: #f1f5f9;
-    padding: 2px 6px;
-    border-radius: 3px;
+    padding: 1px 4px;
+    border-radius: 2px;
     display: inline-block;
 }
 
-/* Увеличиваем высоту строк для двухстрочного контента */
-.mapping-item {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    padding: 15px 20px;
-    border-bottom: 1px solid var(--border-color);
-    align-items: center;
-    min-height: 70px;
-    transition: background-color 0.2s;
-}
-
 .target-item {
-    padding: 0 10px;
+    padding: 0 8px;
     display: flex;
-    gap: 8px;
+    gap: 6px;
 }
 
-.mapping-select {
+.verified-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 0 8px;
+}
+
+.verified-checkbox {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+.verified-label {
+    font-size: 12px;
+    font-weight: 600;
+    min-width: 18px;
+}
+
+.verified-checkbox:checked + .verified-label {
+    color: var(--success-color);
+}
+
+.verified-checkbox:not(:checked) + .verified-label {
+    color: var(--error-color);
+}
+
+.mapping-select, .association-type-select {
     flex: 1;
-    padding: 6px 8px;
+    padding: 4px 6px;
     border: 1px solid var(--border-color);
-    border-radius: 4px;
+    border-radius: 3px;
     background: white;
-    font-size: 14px;
+    font-size: 12px;
+}
+
+.mapping-select optgroup, .association-type-select optgroup {
+    font-weight: bold;
+    color: var(--primary-color);
+}
+
+.mapping-select option, .association-type-select option {
+    font-weight: normal;
+    color: #334155;
+}
+
+.no-mappings {
+    padding: 30px 15px;
+    text-align: center;
+    color: var(--secondary-color);
+    font-style: italic;
+    font-size: 13px;
+}
+
+.modal-content .error-item {
+    border-left: 4px solid var(--error-color);
+    padding-left: 10px;
+}
+
+.tabs-header {
+    display: flex;
+    background: #f1f5f9;
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+    flex-wrap: wrap;
+}
+
+.association-source-target {
+    font-size: 11px;
+    color: var(--secondary-color);
+    font-style: italic;
+    margin-top: 2px;
+}
+
+.attribute-domain-info {
+    font-size: 11px;
+    color: var(--primary-color);
+    font-style: italic;
+    margin-top: 2px;
 }
 
 .mapping-input {
     flex: 1;
-    padding: 6px 8px;
+    padding: 4px 6px;
     border: 1px solid var(--border-color);
-    border-radius: 4px;
-    font-size: 14px;
+    border-radius: 3px;
+    font-size: 12px;
 }
 
-.mapping-input:focus, .mapping-select:focus {
+.mapping-input:focus, .mapping-select:focus, .association-type-select:focus {
     outline: none;
     border-color: var(--primary-color);
     box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
 }
 
-.no-mappings {
-    padding: 40px 20px;
-    text-align: center;
-    color: var(--secondary-color);
-    font-style: italic;
+.custom-schema-indicator {
+    display: inline-block;
+    background: var(--warning-color);
+    color: white;
+    font-size: 10px;
+    padding: 1px 4px;
+    border-radius: 3px;
+    margin-left: 5px;
 }
 
-/* Адаптивность для мобильных устройств */
+/* Стили для улучшенных выпадающих списков с поиском */
+.searchable-select {
+    position: relative;
+    flex: 1;
+}
+
+.searchable-select .selected-value {
+    width: 100%;
+    padding: 4px 6px;
+    border: 1px solid var(--border-color);
+    border-radius: 3px;
+    background: white;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    min-height: 24px;
+}
+
+.searchable-select .selected-value:after {
+    content: '▼';
+    font-size: 10px;
+    color: var(--secondary-color);
+}
+
+.searchable-select .dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid var(--border-color);
+    border-radius: 3px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    z-index: 1000;
+    max-height: 200px;
+    overflow-y: auto;
+    display: none;
+}
+
+.searchable-select.open .dropdown {
+    display: block;
+}
+
+.searchable-select .search-input {
+    width: 100%;
+    padding: 6px 8px;
+    border: none;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 12px;
+    background: #f8fafc;
+}
+
+.searchable-select .search-input:focus {
+    outline: none;
+    background: white;
+}
+
+.searchable-select .options-list {
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+.searchable-select .option {
+    padding: 6px 8px;
+    cursor: pointer;
+    font-size: 12px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.searchable-select .option:hover {
+    background: var(--primary-color);
+    color: white;
+}
+
+.searchable-select .option.selected {
+    background: #e0f2fe;
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.searchable-select .option-group {
+    font-weight: bold;
+    color: var(--primary-color);
+    padding: 4px 8px;
+    background: #f1f5f9;
+    font-size: 11px;
+}
+
+/* Убираем стандартные селекты */
+.mapping-select, .association-type-select {
+    display: none;
+}
+
+@media (max-width: 1200px) {
+    .app-container {
+        padding: 15px;
+        gap: 15px;
+    }
+    
+    .control-panel {
+        grid-template-columns: 1fr;
+        gap: 15px;
+        padding: 15px;
+    }
+    
+    .main-content {
+        gap: 15px;
+    }
+}
+
 @media (max-width: 768px) {
-    .mapping-header, .mapping-item {
+    .app-container {
+        padding: 10px;
+        gap: 10px;
+        height: auto;
+        min-height: 100vh;
+    }
+    
+    .main-content {
+        grid-template-columns: 1fr;
+        grid-template-rows: 1fr auto 1fr;
+        gap: 10px;
+    }
+    
+    .conversion-panel {
+        order: 2;
+        padding: 10px 0;
+    }
+    
+    .editor-panel {
+        min-height: 300px;
+    }
+    
+    .mapping-header,
+    .mapping-item {
         grid-template-columns: 1fr;
         gap: 8px;
     }
     
-    .source-header, .target-header {
-        padding: 5px 0;
+    .mapping-header {
+        padding: 10px;
     }
     
     .mapping-item {
-        padding: 15px 20px;
+        padding: 10px;
+    }
+    
+    .panel-actions {
+        flex-wrap: wrap;
+    }
+    
+    .tabs-header {
+        flex-wrap: wrap;
+    }
+    
+    .tab-button {
+        padding: 6px 10px;
+        font-size: 12px;
+    }
+    
+    .searchable-select {
+        min-width: 150px;
     }
 }

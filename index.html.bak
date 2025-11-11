@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IFC Model Mapper - Конвертер моделей</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://unpkg.com/monaco-editor@0.33.0/min/vs/loader.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <h1>🔧 IFC Model Mapper</h1>
+            <p>Преобразование объектных моделей в формат IFC</p>
+        </header>
+
+        <!-- Control Panel -->
+        <div class="control-panel">
+            <div class="upload-section">
+                <input type="file" id="fileInput" accept=".owl,.ttl,.rdf,.txt">
+                <button id="detectTypeBtn">Определить тип модели</button>
+            </div>
+
+            <div class="type-selection">
+                <label for="sourceType">Тип исходной модели:</label>
+                <select id="sourceType">
+                    <option value="auto">Авто-определение</option>
+                    <option value="owl">OWL Turtle</option>
+                    <option value="rdf">OWL RDF/XML</option>
+                </select>
+
+                <label for="targetIfcVersion">Версия IFC:</label>
+                <select id="targetIfcVersion">
+                    <option value="ifc4x3">IFC4X3</option>
+                </select>
+            </div>
+
+            <div class="mapping-config">
+                <h3>Настройки преобразования</h3>
+                <div class="rules-container">
+                    <div style="color: #64748b; font-style: italic;">
+                        Настройки будут добавлены позже
+                    </div>
+                    <button id="advancedSettingsBtn">Дополнительные настройки</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Основная область: редакторы и кнопка преобразования -->
+        <div class="main-content">
+            <!-- Левый редактор -->
+            <div class="editor-panel">
+                <div class="panel-header">
+                    <h3>Исходная модель</h3>
+                    <div class="panel-actions">
+                        <button id="validateSourceBtn">Проверить</button>
+                        <button id="formatSourceBtn">Форматировать</button>
+                        <button id="fullscreenSourceBtn" class="fullscreen-button">⛶</button>
+                    </div>
+                </div>
+                <div id="sourceEditor" class="editor"></div>
+            </div>
+
+            <!-- Только кнопка преобразования по центру -->
+            <div class="conversion-panel">
+                <button id="convertBtn" class="convert-button">▶ Создать соответствия</button>
+            </div>
+
+            <!-- Правый редактор -->
+            <div class="editor-panel">
+                <div class="panel-header">
+                    <h3>Результат преобразования</h3>
+                    <div class="panel-actions">
+						<button id="validateMappingBtn">Проверить</button>
+						<button id="downloadBtn">Скачать IFC</button>
+						<button id="exportMappingBtn" class="export-button">Экспорт соответствий</button>
+						<button id="fullscreenTargetBtn" class="fullscreen-button">⛶</button>
+					</div>
+                </div>
+                <div class="tabs-container">
+                    <div class="tabs-header">
+						<button class="tab-button active" data-tab="ifc-result">IFC Результат</button>
+						<button class="tab-button" data-tab="class-mapping">Сопоставление классов</button>
+						<button class="tab-button" data-tab="attribute-mapping">Сопоставление атрибутов</button>
+						<button class="tab-button" data-tab="association-mapping">Сопоставление ассоциаций</button>
+					</div>
+                    <div class="tabs-content">
+                        <div id="ifc-result" class="tab-pane active">
+                            <div id="targetEditor" class="editor"></div>
+                        </div>
+                        <div id="class-mapping" class="tab-pane">
+                            <div class="mapping-container">
+                                <div class="mapping-header">
+                                    <span class="source-header">OWL Класс</span>
+                                    <span class="target-header">IFC Эквивалент</span>
+                                    <span class="verified-header">Подтверждено</span>
+                                </div>
+                                <div id="classMappingList" class="mapping-list">
+                                    <!-- Сюда будут добавляться строки соответствий -->
+                                </div>
+                            </div>
+                        </div>
+                        <div id="attribute-mapping" class="tab-pane">
+                            <div class="mapping-container">
+                                <div class="mapping-header">
+                                    <span class="source-header">OWL Атрибут</span>
+                                    <span class="target-header">IFC Атрибут</span>
+                                    <span class="verified-header">Подтверждено</span>
+                                </div>
+                                <div id="attributeMappingList" class="mapping-list">
+                                    <!-- Сюда будут добавляться строки соответствий -->
+                                </div>
+                            </div>
+                        </div>
+						<div id="association-mapping" class="tab-pane">
+							<div class="mapping-container">
+								<div class="mapping-header">
+									<span class="source-header">OWL Ассоциация</span>
+									<span class="target-header">IFC Отношение</span>
+									<span class="verified-header">Подтверждено</span>
+								</div>
+								<div id="associationMappingList" class="mapping-list">
+									<!-- Сюда будут добавляться строки соответствий ассоциаций -->
+								</div>
+							</div>
+						</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Advanced Settings Modal -->
+    <div id="advancedModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Дополнительные настройки преобразования</h2>
+            </div>
+            
+            <div class="modal-sections">
+                <div class="modal-section">
+                    <h4>Настройки</h4>
+                    <div style="color: #64748b; font-style: italic;">
+                        Настройки будут добавлены позже
+                    </div>
+                </div>
+                <div class="modal-section">
+                    <h4>Ещё настройки</h4>
+                    <div style="color: #64748b; font-style: italic;">
+                        Настройки будут добавлены позже
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button id="cancelSettingsBtn" class="cancel-button">Отменить</button>
+                <button id="saveSettingsBtn" class="save-button">Сохранить настройки</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
