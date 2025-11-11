@@ -1,0 +1,2088 @@
+{
+    "ModelVersion": "2.0",
+    "OrganizationCode": "buildingsmart",
+    "DictionaryCode": "ifc",
+    "DictionaryName": "IFC",
+    "DictionaryVersion": "4.3",
+    "LanguageIsoCode": "EN",
+    "LanguageOnly": false,
+    "UseOwnUri": false,
+    "License": "CC BY-ND 4.0",
+    "LicenseUrl": "https://creativecommons.org/licenses/by-nd/4.0/legalcode",
+    "MoreInfoUrl": "https://ifc43-docs.standards.buildingsmart.org/",
+    "QualityAssuranceProcedure": "IFC is a standardized digital description of built environment created by buildingSMART International and its community members. For more information read ISO 16739 and IFC schema documentation.",
+    "QualityAssuranceProcedureUrl": "https://technical.buildingsmart.org/standards/ifc/",
+    "ReleaseDate": "2024-01-11",
+    "Classes": [
+        {
+            "Code": "IfcActuator",
+            "Name": "Actuator",
+            "Definition": "An actuator is a mechanical device for moving or controlling a mechanism or system. An actuator takes energy, usually created by air, electricity, or liquid, and converts that into some kind of motion.",
+            "ClassType": "Class",
+            "ClassProperties": [
+                {
+                    "PropertyCode": "PositionHistory",
+                    "Code": "PositionHistory_from_ActuatorPHistory",
+                    "PropertySet": "Pset_ActuatorPHistory"
+                },
+                {
+                    "PropertyCode": "QualityHistory",
+                    "Code": "QualityHistory_from_ActuatorPHistory",
+                    "PropertySet": "Pset_ActuatorPHistory"
+                },
+                {
+                    "PropertyCode": "StatusHistory",
+                    "Code": "StatusHistory_from_ActuatorPHistory",
+                    "PropertySet": "Pset_ActuatorPHistory"
+                },
+                {
+                    "PropertyCode": "ActuatorApplication",
+                    "Code": "ActuatorApplication_from_ActuatorTypeCommon",
+                    "PropertySet": "Pset_ActuatorTypeCommon"
+                },
+                {
+                    "PropertyCode": "ActuatorStatus",
+                    "Code": "ActuatorStatus_from_ActuatorTypeCommon",
+                    "PropertySet": "Pset_ActuatorTypeCommon"
+                },
+                {
+                    "PropertyCode": "FailPosition",
+                    "Code": "FailPosition_from_ActuatorTypeCommon",
+                    "PropertySet": "Pset_ActuatorTypeCommon"
+                },
+                {
+                    "PropertyCode": "ManualOverride",
+                    "Code": "ManualOverride_from_ActuatorTypeCommon",
+                    "PropertySet": "Pset_ActuatorTypeCommon"
+                },
+                {
+                    "PropertyCode": "Force",
+                    "Code": "Force_from_ActuatorTypeLinearActuation",
+                    "PropertySet": "Pset_ActuatorTypeLinearActuation"
+                },
+                {
+                    "PropertyCode": "Stroke",
+                    "Code": "Stroke_from_ActuatorTypeLinearActuation",
+                    "PropertySet": "Pset_ActuatorTypeLinearActuation"
+                },
+                {
+                    "PropertyCode": "RangeAngle",
+                    "Code": "RangeAngle_from_ActuatorTypeRotationalActuation",
+                    "PropertySet": "Pset_ActuatorTypeRotationalActuation"
+                },
+                {
+                    "PropertyCode": "Torque",
+                    "Code": "Torque_from_ActuatorTypeRotationalActuation",
+                    "PropertySet": "Pset_ActuatorTypeRotationalActuation"
+                },
+                {
+                    "PropertyCode": "GrossWeight",
+                    "Code": "GrossWeight_from_ActuatorBaseQuantities",
+                    "PropertySet": "Qto_ActuatorBaseQuantities"
+                },
+                {
+                    "PropertyCode": "ConductorFunction",
+                    "Code": "ConductorFunction_from_ElectricalDeviceCommon",
+                    "PropertySet": "Pset_ElectricalDeviceCommon"
+                },
+                {
+                    "PropertyCode": "EarthingStyle",
+                    "Code": "EarthingStyle_from_ElectricalDeviceCommon",
+                    "PropertySet": "Pset_ElectricalDeviceCommon"
+                },
+                {
+                    "PropertyCode": "HasProtectiveEarth",
+                    "Code": "HasProtectiveEarth_from_ElectricalDeviceCommon",
+                    "PropertySet": "Pset_ElectricalDeviceCommon"
+                },
+                {
+                    "PropertyCode": "HeatDissipation",
+                    "Code": "HeatDissipation_from_ElectricalDeviceCommon",
+                    "PropertySet": "Pset_ElectricalDeviceCommon"
+                },
+                {
+                    "PropertyCode": "IK_Code",
+                    "Code": "IK_Code_from_ElectricalDeviceCommon",
+                    "PropertySet": "Pset_ElectricalDeviceCommon"
+                },
+                {
+                    "PropertyCode": "InsulationStandardClass",
+                    "Code": "InsulationStandardClass_from_Electrica...iceCommon",
+                    "PropertySet": "Pset_ElectricalDeviceCommon"
+                },
+                {
+                    "PropertyCode": "IP_Code",
+                    "Code": "IP_Code_from_ElectricalDeviceCommon",
+                    "PropertySet": "Pset_ElectricalDeviceCommon"
+                },
+                {
+                    "PropertyCode": "NominalFrequencyRange",
+                    "Code": "NominalFrequencyRange_from_ElectricalDeviceCommon",
+                    "PropertySet": "Pset_ElectricalDeviceCommon"
+                },
+                {
+                    "PropertyCode": "NominalPowerConsumption",
+                    "Code": "NominalPowerConsumption_from_Electrica...iceCommon",
+                    "PropertySet": "Pset_ElectricalDeviceCommon"
+                },
+                {
+                    "PropertyCode": "NumberOfPoles",
+                    "Code": "NumberOfPoles_from_ElectricalDeviceCommon",
+                    "PropertySet": "Pset_ElectricalDeviceCommon"
+                },
+                {
+                    "PropertyCode": "NumberOfPowerSupplyPorts",
+                    "Code": "NumberOfPowerSupplyPorts_from_Electric...ceCommon",
+                    "PropertySet": "Pset_ElectricalDeviceCommon"
+                },
+                {
+                    "PropertyCode": "Power",
+                    "Code": "Power_from_ElectricalDeviceCommon",
+                    "PropertySet": "Pset_ElectricalDeviceCommon"
+                },
+                {
+                    "PropertyCode": "PowerFactor",
+                    "Code": "PowerFactor_from_ElectricalDeviceCommon",
+                    "PropertySet": "Pset_ElectricalDeviceCommon"
+                },
+                {
+                    "PropertyCode": "RatedCurrent",
+                    "Code": "RatedCurrent_from_ElectricalDeviceCommon",
+                    "PropertySet": "Pset_ElectricalDeviceCommon"
+                },
+                {
+                    "PropertyCode": "RatedVoltage",
+                    "Code": "RatedVoltage_from_ElectricalDeviceCommon",
+                    "PropertySet": "Pset_ElectricalDeviceCommon"
+                },
+                {
+                    "PropertyCode": "EnergyConsumption",
+                    "Code": "EnergyConsumption_from_EnergyRequirements",
+                    "PropertySet": "Pset_EnergyRequirements"
+                },
+                {
+                    "PropertyCode": "EnergyConversionEfficiency",
+                    "Code": "EnergyConversionEfficiency_from_EnergyRequirements",
+                    "PropertySet": "Pset_EnergyRequirements"
+                },
+                {
+                    "PropertyCode": "EnergySourceLabel",
+                    "Code": "EnergySourceLabel_from_EnergyRequirements",
+                    "PropertySet": "Pset_EnergyRequirements"
+                },
+                {
+                    "PropertyCode": "PowerDemand",
+                    "Code": "PowerDemand_from_EnergyRequirements",
+                    "PropertySet": "Pset_EnergyRequirements"
+                },
+                {
+                    "PropertyCode": "CarbonDioxideEmissions",
+                    "Code": "CarbonDioxideEmissions_from_EnvironmentalEmissions",
+                    "PropertySet": "Pset_EnvironmentalEmissions"
+                },
+                {
+                    "PropertyCode": "NitrogenOxidesEmissions",
+                    "Code": "NitrogenOxidesEmissions_from_Environme...Emissions",
+                    "PropertySet": "Pset_EnvironmentalEmissions"
+                },
+                {
+                    "PropertyCode": "NoiseEmissions",
+                    "Code": "NoiseEmissions_from_EnvironmentalEmissions",
+                    "PropertySet": "Pset_EnvironmentalEmissions"
+                },
+                {
+                    "PropertyCode": "ParticulateMatterEmissions",
+                    "Code": "ParticulateMatterEmissions_from_Environ...issions",
+                    "PropertySet": "Pset_EnvironmentalEmissions"
+                },
+                {
+                    "PropertyCode": "SulphurDioxideEmissions",
+                    "Code": "SulphurDioxideEmissions_from_Environme...Emissions",
+                    "PropertySet": "Pset_EnvironmentalEmissions"
+                },
+                {
+                    "PropertyCode": "ElectroMagneticStandardsCompliance",
+                    "Code": "ElectroMagneticStandardsCompliance_from_Ele...nce",
+                    "PropertySet": "Pset_ElectricalDeviceCompliance"
+                },
+                {
+                    "PropertyCode": "ExplosiveAtmosphereStandardsCompliance",
+                    "Code": "ExplosiveAtmosphereStandardsCompliance_from_E...e",
+                    "PropertySet": "Pset_ElectricalDeviceCompliance"
+                },
+                {
+                    "PropertyCode": "FireProofingStandardsCompliance",
+                    "Code": "FireProofingStandardsCompliance_from_Elect...iance",
+                    "PropertySet": "Pset_ElectricalDeviceCompliance"
+                },
+                {
+                    "PropertyCode": "LightningProtectionStandardsCompliance",
+                    "Code": "LightningProtectionStandardsCompliance_from_E...e",
+                    "PropertySet": "Pset_ElectricalDeviceCompliance"
+                },
+                {
+                    "PropertyCode": "AtmosphericAcidificationPerUnit",
+                    "Code": "AtmosphericAcidificationPerUnit_from_Envir...ators",
+                    "PropertySet": "Pset_EnvironmentalImpactIndicators"
+                },
+                {
+                    "PropertyCode": "ClimateChangePerUnit",
+                    "Code": "ClimateChangePerUnit_from_Environmen...Indicators",
+                    "PropertySet": "Pset_EnvironmentalImpactIndicators"
+                },
+                {
+                    "PropertyCode": "EutrophicationPerUnit",
+                    "Code": "EutrophicationPerUnit_from_Environmen...Indicators",
+                    "PropertySet": "Pset_EnvironmentalImpactIndicators"
+                },
+                {
+                    "PropertyCode": "ExpectedServiceLife",
+                    "Code": "ExpectedServiceLife_from_Environment...tIndicators",
+                    "PropertySet": "Pset_EnvironmentalImpactIndicators"
+                },
+                {
+                    "PropertyCode": "FunctionalUnitReference",
+                    "Code": "FunctionalUnitReference_from_Environme...ndicators",
+                    "PropertySet": "Pset_EnvironmentalImpactIndicators"
+                },
+                {
+                    "PropertyCode": "HazardousWastePerUnit",
+                    "Code": "HazardousWastePerUnit_from_Environmen...Indicators",
+                    "PropertySet": "Pset_EnvironmentalImpactIndicators"
+                },
+                {
+                    "PropertyCode": "IndicatorsUnit",
+                    "Code": "IndicatorsUnit_from_EnvironmentalImpactIndicators",
+                    "PropertySet": "Pset_EnvironmentalImpactIndicators"
+                },
+                {
+                    "PropertyCode": "InertWastePerUnit",
+                    "Code": "InertWastePerUnit_from_Environmenta...ctIndicators",
+                    "PropertySet": "Pset_EnvironmentalImpactIndicators"
+                },
+                {
+                    "PropertyCode": "LifeCyclePhase",
+                    "Code": "LifeCyclePhase_from_EnvironmentalImpactIndicators",
+                    "PropertySet": "Pset_EnvironmentalImpactIndicators"
+                },
+                {
+                    "PropertyCode": "NonHazardousWastePerUnit",
+                    "Code": "NonHazardousWastePerUnit_from_Environm...dicators",
+                    "PropertySet": "Pset_EnvironmentalImpactIndicators"
+                },
+                {
+                    "PropertyCode": "NonRenewableEnergyConsumptionPerUnit",
+                    "Code": "NonRenewableEnergyConsumptionPerUnit_from_En...rs",
+                    "PropertySet": "Pset_EnvironmentalImpactIndicators"
+                },
+                {
+                    "PropertyCode": "PhotochemicalOzoneFormationPerUnit",
+                    "Code": "PhotochemicalOzoneFormationPerUnit_from_Env...ors",
+                    "PropertySet": "Pset_EnvironmentalImpactIndicators"
+                },
+                {
+                    "PropertyCode": "RadioactiveWastePerUnit",
+                    "Code": "RadioactiveWastePerUnit_from_Environme...ndicators",
+                    "PropertySet": "Pset_EnvironmentalImpactIndicators"
+                },
+                {
+                    "PropertyCode": "RenewableEnergyConsumptionPerUnit",
+                    "Code": "RenewableEnergyConsumptionPerUnit_from_Envi...tors",
+                    "PropertySet": "Pset_EnvironmentalImpactIndicators"
+                },
+                {
+                    "PropertyCode": "ResourceDepletionPerUnit",
+                    "Code": "ResourceDepletionPerUnit_from_Environm...dicators",
+                    "PropertySet": "Pset_EnvironmentalImpactIndicators"
+                },
+                {
+                    "PropertyCode": "StratosphericOzoneLayerDestructionPerUnit",
+                    "Code": "StratosphericOzoneLayerDestructionPerUnit_from_...",
+                    "PropertySet": "Pset_EnvironmentalImpactIndicators"
+                },
+                {
+                    "PropertyCode": "TotalPrimaryEnergyConsumptionPerUnit",
+                    "Code": "TotalPrimaryEnergyConsumptionPerUnit_from_En...rs",
+                    "PropertySet": "Pset_EnvironmentalImpactIndicators"
+                },
+                {
+                    "PropertyCode": "WaterConsumptionPerUnit",
+                    "Code": "WaterConsumptionPerUnit_from_Environme...ndicators",
+                    "PropertySet": "Pset_EnvironmentalImpactIndicators"
+                },
+                {
+                    "PropertyCode": "AtmosphericAcidification",
+                    "Code": "AtmosphericAcidification_from_Environm...ctValues",
+                    "PropertySet": "Pset_EnvironmentalImpactValues"
+                },
+                {
+                    "PropertyCode": "ClimateChange",
+                    "Code": "ClimateChange_from_EnvironmentalImpactValues",
+                    "PropertySet": "Pset_EnvironmentalImpactValues"
+                },
+                {
+                    "PropertyCode": "Duration",
+                    "Code": "Duration_from_EnvironmentalImpactValues",
+                    "PropertySet": "Pset_EnvironmentalImpactValues"
+                },
+                {
+                    "PropertyCode": "Eutrophication",
+                    "Code": "Eutrophication_from_EnvironmentalImpactValues",
+                    "PropertySet": "Pset_EnvironmentalImpactValues"
+                },
+                {
+                    "PropertyCode": "HazardousWaste",
+                    "Code": "HazardousWaste_from_EnvironmentalImpactValues",
+                    "PropertySet": "Pset_EnvironmentalImpactValues"
+                },
+                {
+                    "PropertyCode": "InertWaste",
+                    "Code": "InertWaste_from_EnvironmentalImpactValues",
+                    "PropertySet": "Pset_EnvironmentalImpactValues"
+                },
+                {
+                    "PropertyCode": "LeadInTime",
+                    "Code": "LeadInTime_from_EnvironmentalImpactValues",
+                    "PropertySet": "Pset_EnvironmentalImpactValues"
+                },
+                {
+                    "PropertyCode": "LeadOutTime",
+                    "Code": "LeadOutTime_from_EnvironmentalImpactValues",
+                    "PropertySet": "Pset_EnvironmentalImpactValues"
+                },
+                {
+                    "PropertyCode": "NonHazardousWaste",
+                    "Code": "NonHazardousWaste_from_EnvironmentalImpactValues",
+                    "PropertySet": "Pset_EnvironmentalImpactValues"
+                },
+                {
+                    "PropertyCode": "NonRenewableEnergyConsumption",
+                    "Code": "NonRenewableEnergyConsumption_from_Enviro...Values",
+                    "PropertySet": "Pset_EnvironmentalImpactValues"
+                },
+                {
+                    "PropertyCode": "PhotochemicalOzoneFormation",
+                    "Code": "PhotochemicalOzoneFormation_from_Environ...tValues",
+                    "PropertySet": "Pset_EnvironmentalImpactValues"
+                },
+                {
+                    "PropertyCode": "RadioactiveWaste",
+                    "Code": "RadioactiveWaste_from_EnvironmentalImpactValues",
+                    "PropertySet": "Pset_EnvironmentalImpactValues"
+                },
+                {
+                    "PropertyCode": "RenewableEnergyConsumption",
+                    "Code": "RenewableEnergyConsumption_from_Environ...tValues",
+                    "PropertySet": "Pset_EnvironmentalImpactValues"
+                },
+                {
+                    "PropertyCode": "ResourceDepletion",
+                    "Code": "ResourceDepletion_from_EnvironmentalImpactValues",
+                    "PropertySet": "Pset_EnvironmentalImpactValues"
+                },
+                {
+                    "PropertyCode": "StratosphericOzoneLayerDestruction",
+                    "Code": "StratosphericOzoneLayerDestruction_from_Env...ues",
+                    "PropertySet": "Pset_EnvironmentalImpactValues"
+                },
+                {
+                    "PropertyCode": "TotalPrimaryEnergyConsumption",
+                    "Code": "TotalPrimaryEnergyConsumption_from_Enviro...Values",
+                    "PropertySet": "Pset_EnvironmentalImpactValues"
+                },
+                {
+                    "PropertyCode": "WaterConsumption",
+                    "Code": "WaterConsumption_from_EnvironmentalImpactValues",
+                    "PropertySet": "Pset_EnvironmentalImpactValues"
+                },
+                {
+                    "PropertyCode": "MaximumAtmosphericPressure",
+                    "Code": "MaximumAtmosphericPressure_from_Environ...ndition",
+                    "PropertySet": "Pset_EnvironmentalCondition"
+                },
+                {
+                    "PropertyCode": "MaximumRainIntensity",
+                    "Code": "MaximumRainIntensity_from_EnvironmentalCondition",
+                    "PropertySet": "Pset_EnvironmentalCondition"
+                },
+                {
+                    "PropertyCode": "MaximumSolarRadiation",
+                    "Code": "MaximumSolarRadiation_from_EnvironmentalCondition",
+                    "PropertySet": "Pset_EnvironmentalCondition"
+                },
+                {
+                    "PropertyCode": "MaximumWindSpeed",
+                    "Code": "MaximumWindSpeed_from_EnvironmentalCondition",
+                    "PropertySet": "Pset_EnvironmentalCondition"
+                },
+                {
+                    "PropertyCode": "OperationalTemperatureRange",
+                    "Code": "OperationalTemperatureRange_from_Environ...ndition",
+                    "PropertySet": "Pset_EnvironmentalCondition"
+                },
+                {
+                    "PropertyCode": "ReferenceAirRelativeHumidity",
+                    "Code": "ReferenceAirRelativeHumidity_from_Enviro...dition",
+                    "PropertySet": "Pset_EnvironmentalCondition"
+                },
+                {
+                    "PropertyCode": "ReferenceEnvironmentTemperature",
+                    "Code": "ReferenceEnvironmentTemperature_from_Envir...ition",
+                    "PropertySet": "Pset_EnvironmentalCondition"
+                },
+                {
+                    "PropertyCode": "SaltMistLevel",
+                    "Code": "SaltMistLevel_from_EnvironmentalCondition",
+                    "PropertySet": "Pset_EnvironmentalCondition"
+                },
+                {
+                    "PropertyCode": "SeismicResistance",
+                    "Code": "SeismicResistance_from_EnvironmentalCondition",
+                    "PropertySet": "Pset_EnvironmentalCondition"
+                },
+                {
+                    "PropertyCode": "SmokeLevel",
+                    "Code": "SmokeLevel_from_EnvironmentalCondition",
+                    "PropertySet": "Pset_EnvironmentalCondition"
+                },
+                {
+                    "PropertyCode": "StorageTemperatureRange",
+                    "Code": "StorageTemperatureRange_from_Environme...Condition",
+                    "PropertySet": "Pset_EnvironmentalCondition"
+                },
+                {
+                    "PropertyCode": "AcceptanceDate",
+                    "Code": "AcceptanceDate_from_InstallationOccurrence",
+                    "PropertySet": "Pset_InstallationOccurrence"
+                },
+                {
+                    "PropertyCode": "InstallationDate",
+                    "Code": "InstallationDate_from_InstallationOccurrence",
+                    "PropertySet": "Pset_InstallationOccurrence"
+                },
+                {
+                    "PropertyCode": "PutIntoOperationDate",
+                    "Code": "PutIntoOperationDate_from_InstallationOccurrence",
+                    "PropertySet": "Pset_InstallationOccurrence"
+                },
+                {
+                    "PropertyCode": "MeanTimeToRepair",
+                    "Code": "MeanTimeToRepair_from_RepairOccurrence",
+                    "PropertySet": "Pset_RepairOccurrence"
+                },
+                {
+                    "PropertyCode": "RepairContent",
+                    "Code": "RepairContent_from_RepairOccurrence",
+                    "PropertySet": "Pset_RepairOccurrence"
+                },
+                {
+                    "PropertyCode": "RepairDate",
+                    "Code": "RepairDate_from_RepairOccurrence",
+                    "PropertySet": "Pset_RepairOccurrence"
+                },
+                {
+                    "PropertyCode": "AssessmentCondition",
+                    "Code": "AssessmentCondition_from_Condition",
+                    "PropertySet": "Pset_Condition"
+                },
+                {
+                    "PropertyCode": "AssessmentDate",
+                    "Code": "AssessmentDate_from_Condition",
+                    "PropertySet": "Pset_Condition"
+                },
+                {
+                    "PropertyCode": "AssessmentDescription",
+                    "Code": "AssessmentDescription_from_Condition",
+                    "PropertySet": "Pset_Condition"
+                },
+                {
+                    "PropertyCode": "AssessmentFrequency",
+                    "Code": "AssessmentFrequency_from_Condition",
+                    "PropertySet": "Pset_Condition"
+                },
+                {
+                    "PropertyCode": "AssessmentMethod",
+                    "Code": "AssessmentMethod_from_Condition",
+                    "PropertySet": "Pset_Condition"
+                },
+                {
+                    "PropertyCode": "AssessmentType",
+                    "Code": "AssessmentType_from_Condition",
+                    "PropertySet": "Pset_Condition"
+                },
+                {
+                    "PropertyCode": "LastAssessmentReport",
+                    "Code": "LastAssessmentReport_from_Condition",
+                    "PropertySet": "Pset_Condition"
+                },
+                {
+                    "PropertyCode": "NextAssessmentDate",
+                    "Code": "NextAssessmentDate_from_Condition",
+                    "PropertySet": "Pset_Condition"
+                },
+                {
+                    "PropertyCode": "ProcurementMethod",
+                    "Code": "ProcurementMethod_from_ConstructionAdministration",
+                    "PropertySet": "Pset_ConstructionAdministration"
+                },
+                {
+                    "PropertyCode": "SpecificationSectionNumber",
+                    "Code": "SpecificationSectionNumber_from_Constru...tration",
+                    "PropertySet": "Pset_ConstructionAdministration"
+                },
+                {
+                    "PropertyCode": "SubmittalIdentifer",
+                    "Code": "SubmittalIdentifer_from_ConstructionAdministration",
+                    "PropertySet": "Pset_ConstructionAdministration"
+                },
+                {
+                    "PropertyCode": "AssetIdentifier",
+                    "Code": "AssetIdentifier_from_ConstructionOccurence",
+                    "PropertySet": "Pset_ConstructionOccurence"
+                },
+                {
+                    "PropertyCode": "InstallationDate",
+                    "Code": "InstallationDate_from_ConstructionOccurence",
+                    "PropertySet": "Pset_ConstructionOccurence"
+                },
+                {
+                    "PropertyCode": "ModelNumber",
+                    "Code": "ModelNumber_from_ConstructionOccurence",
+                    "PropertySet": "Pset_ConstructionOccurence"
+                },
+                {
+                    "PropertyCode": "TagNumber",
+                    "Code": "TagNumber_from_ConstructionOccurence",
+                    "PropertySet": "Pset_ConstructionOccurence"
+                },
+                {
+                    "PropertyCode": "AccidentResponse",
+                    "Code": "AccidentResponse_from_MaintenanceStrategy",
+                    "PropertySet": "Pset_MaintenanceStrategy"
+                },
+                {
+                    "PropertyCode": "AssetCriticality",
+                    "Code": "AssetCriticality_from_MaintenanceStrategy",
+                    "PropertySet": "Pset_MaintenanceStrategy"
+                },
+                {
+                    "PropertyCode": "AssetFrailty",
+                    "Code": "AssetFrailty_from_MaintenanceStrategy",
+                    "PropertySet": "Pset_MaintenanceStrategy"
+                },
+                {
+                    "PropertyCode": "AssetPriority",
+                    "Code": "AssetPriority_from_MaintenanceStrategy",
+                    "PropertySet": "Pset_MaintenanceStrategy"
+                },
+                {
+                    "PropertyCode": "MonitoringType",
+                    "Code": "MonitoringType_from_MaintenanceStrategy",
+                    "PropertySet": "Pset_MaintenanceStrategy"
+                },
+                {
+                    "PropertyCode": "ConditionDisposalLevel",
+                    "Code": "ConditionDisposalLevel_from_Maintenan...Condition",
+                    "PropertySet": "Pset_MaintenanceTriggerCondition"
+                },
+                {
+                    "PropertyCode": "ConditionMaintenanceLevel",
+                    "Code": "ConditionMaintenanceLevel_from_Maintena...ondition",
+                    "PropertySet": "Pset_MaintenanceTriggerCondition"
+                },
+                {
+                    "PropertyCode": "ConditionReplacementLevel",
+                    "Code": "ConditionReplacementLevel_from_Maintena...ondition",
+                    "PropertySet": "Pset_MaintenanceTriggerCondition"
+                },
+                {
+                    "PropertyCode": "ConditionTargetPerformance",
+                    "Code": "ConditionTargetPerformance_from_Mainten...ndition",
+                    "PropertySet": "Pset_MaintenanceTriggerCondition"
+                },
+                {
+                    "PropertyCode": "DurationDisposalLevel",
+                    "Code": "DurationDisposalLevel_from_Maintenanc...erDuration",
+                    "PropertySet": "Pset_MaintenanceTriggerDuration"
+                },
+                {
+                    "PropertyCode": "DurationMaintenanceLevel",
+                    "Code": "DurationMaintenanceLevel_from_Maintena...Duration",
+                    "PropertySet": "Pset_MaintenanceTriggerDuration"
+                },
+                {
+                    "PropertyCode": "DurationReplacementLevel",
+                    "Code": "DurationReplacementLevel_from_Maintena...Duration",
+                    "PropertySet": "Pset_MaintenanceTriggerDuration"
+                },
+                {
+                    "PropertyCode": "DurationTargetPerformance",
+                    "Code": "DurationTargetPerformance_from_Maintena...Duration",
+                    "PropertySet": "Pset_MaintenanceTriggerDuration"
+                },
+                {
+                    "PropertyCode": "DisposalLevel",
+                    "Code": "DisposalLevel_from_MaintenanceTriggerPerformance",
+                    "PropertySet": "Pset_MaintenanceTriggerPerformance"
+                },
+                {
+                    "PropertyCode": "PerformanceMaintenanceLevel",
+                    "Code": "PerformanceMaintenanceLevel_from_Mainten...ormance",
+                    "PropertySet": "Pset_MaintenanceTriggerPerformance"
+                },
+                {
+                    "PropertyCode": "ReplacementLevel",
+                    "Code": "ReplacementLevel_from_MaintenanceT...rPerformance",
+                    "PropertySet": "Pset_MaintenanceTriggerPerformance"
+                },
+                {
+                    "PropertyCode": "TargetPerformance",
+                    "Code": "TargetPerformance_from_MaintenanceT...rPerformance",
+                    "PropertySet": "Pset_MaintenanceTriggerPerformance"
+                },
+                {
+                    "PropertyCode": "AcquisitionDate",
+                    "Code": "AcquisitionDate_from_ManufacturerOccurrence",
+                    "PropertySet": "Pset_ManufacturerOccurrence"
+                },
+                {
+                    "PropertyCode": "AssemblyPlace",
+                    "Code": "AssemblyPlace_from_ManufacturerOccurrence",
+                    "PropertySet": "Pset_ManufacturerOccurrence"
+                },
+                {
+                    "PropertyCode": "BarCode",
+                    "Code": "BarCode_from_ManufacturerOccurrence",
+                    "PropertySet": "Pset_ManufacturerOccurrence"
+                },
+                {
+                    "PropertyCode": "BatchReference",
+                    "Code": "BatchReference_from_ManufacturerOccurrence",
+                    "PropertySet": "Pset_ManufacturerOccurrence"
+                },
+                {
+                    "PropertyCode": "ManufacturingDate",
+                    "Code": "ManufacturingDate_from_ManufacturerOccurrence",
+                    "PropertySet": "Pset_ManufacturerOccurrence"
+                },
+                {
+                    "PropertyCode": "SerialNumber",
+                    "Code": "SerialNumber_from_ManufacturerOccurrence",
+                    "PropertySet": "Pset_ManufacturerOccurrence"
+                },
+                {
+                    "PropertyCode": "ArticleNumber",
+                    "Code": "ArticleNumber_from_ManufacturerTypeInformation",
+                    "PropertySet": "Pset_ManufacturerTypeInformation"
+                },
+                {
+                    "PropertyCode": "AssemblyPlace",
+                    "Code": "AssemblyPlace_from_ManufacturerTypeInformation",
+                    "PropertySet": "Pset_ManufacturerTypeInformation"
+                },
+                {
+                    "PropertyCode": "GlobalTradeItemNumber",
+                    "Code": "GlobalTradeItemNumber_from_Manufactur...nformation",
+                    "PropertySet": "Pset_ManufacturerTypeInformation"
+                },
+                {
+                    "PropertyCode": "Manufacturer",
+                    "Code": "Manufacturer_from_ManufacturerTypeInformation",
+                    "PropertySet": "Pset_ManufacturerTypeInformation"
+                },
+                {
+                    "PropertyCode": "ModelLabel",
+                    "Code": "ModelLabel_from_ManufacturerTypeInformation",
+                    "PropertySet": "Pset_ManufacturerTypeInformation"
+                },
+                {
+                    "PropertyCode": "ModelReference",
+                    "Code": "ModelReference_from_ManufacturerTypeInformation",
+                    "PropertySet": "Pset_ManufacturerTypeInformation"
+                },
+                {
+                    "PropertyCode": "OperationalDocument",
+                    "Code": "OperationalDocument_from_Manufacture...Information",
+                    "PropertySet": "Pset_ManufacturerTypeInformation"
+                },
+                {
+                    "PropertyCode": "PerformanceCertificate",
+                    "Code": "PerformanceCertificate_from_Manufactu...formation",
+                    "PropertySet": "Pset_ManufacturerTypeInformation"
+                },
+                {
+                    "PropertyCode": "ProductionYear",
+                    "Code": "ProductionYear_from_ManufacturerTypeInformation",
+                    "PropertySet": "Pset_ManufacturerTypeInformation"
+                },
+                {
+                    "PropertyCode": "SafetyDocument",
+                    "Code": "SafetyDocument_from_ManufacturerTypeInformation",
+                    "PropertySet": "Pset_ManufacturerTypeInformation"
+                },
+                {
+                    "PropertyCode": "MeanTimeBetweenFailure",
+                    "Code": "MeanTimeBetweenFailure_from_ServiceLife",
+                    "PropertySet": "Pset_ServiceLife"
+                },
+                {
+                    "PropertyCode": "ServiceLifeDuration",
+                    "Code": "ServiceLifeDuration_from_ServiceLife",
+                    "PropertySet": "Pset_ServiceLife"
+                },
+                {
+                    "PropertyCode": "Exclusions",
+                    "Code": "Exclusions_from_Warranty",
+                    "PropertySet": "Pset_Warranty"
+                },
+                {
+                    "PropertyCode": "IsExtendedWarranty",
+                    "Code": "IsExtendedWarranty_from_Warranty",
+                    "PropertySet": "Pset_Warranty"
+                },
+                {
+                    "PropertyCode": "PointOfContact",
+                    "Code": "PointOfContact_from_Warranty",
+                    "PropertySet": "Pset_Warranty"
+                },
+                {
+                    "PropertyCode": "WarrantyContent",
+                    "Code": "WarrantyContent_from_Warranty",
+                    "PropertySet": "Pset_Warranty"
+                },
+                {
+                    "PropertyCode": "WarrantyIdentifier",
+                    "Code": "WarrantyIdentifier_from_Warranty",
+                    "PropertySet": "Pset_Warranty"
+                },
+                {
+                    "PropertyCode": "WarrantyPeriod",
+                    "Code": "WarrantyPeriod_from_Warranty",
+                    "PropertySet": "Pset_Warranty"
+                },
+                {
+                    "PropertyCode": "WarrantyStartDate",
+                    "Code": "WarrantyStartDate_from_Warranty",
+                    "PropertySet": "Pset_Warranty"
+                },
+                {
+                    "PropertyCode": "CyclicPath",
+                    "Code": "CyclicPath_from_ElementKinematics",
+                    "PropertySet": "Pset_ElementKinematics"
+                },
+                {
+                    "PropertyCode": "CyclicRange",
+                    "Code": "CyclicRange_from_ElementKinematics",
+                    "PropertySet": "Pset_ElementKinematics"
+                },
+                {
+                    "PropertyCode": "LinearPath",
+                    "Code": "LinearPath_from_ElementKinematics",
+                    "PropertySet": "Pset_ElementKinematics"
+                },
+                {
+                    "PropertyCode": "LinearRange",
+                    "Code": "LinearRange_from_ElementKinematics",
+                    "PropertySet": "Pset_ElementKinematics"
+                },
+                {
+                    "PropertyCode": "MaximumAngularVelocity",
+                    "Code": "MaximumAngularVelocity_from_ElementKinematics",
+                    "PropertySet": "Pset_ElementKinematics"
+                },
+                {
+                    "PropertyCode": "MaximumConstantSpeed",
+                    "Code": "MaximumConstantSpeed_from_ElementKinematics",
+                    "PropertySet": "Pset_ElementKinematics"
+                },
+                {
+                    "PropertyCode": "MinimumTime",
+                    "Code": "MinimumTime_from_ElementKinematics",
+                    "PropertySet": "Pset_ElementKinematics"
+                },
+                {
+                    "PropertyCode": "Tag",
+                    "Code": "Tag_from_Attributes",
+                    "PropertySet": "Attributes"
+                },
+                {
+                    "PropertyCode": "ElementType",
+                    "Code": "ElementType_from_Attributes",
+                    "PropertySet": "Attributes"
+                },
+                {
+                    "PropertyCode": "GrossSurfaceArea",
+                    "Code": "GrossSurfaceArea_from_BodyGeometryValidation",
+                    "PropertySet": "Qto_BodyGeometryValidation"
+                },
+                {
+                    "PropertyCode": "GrossVolume",
+                    "Code": "GrossVolume_from_BodyGeometryValidation",
+                    "PropertySet": "Qto_BodyGeometryValidation"
+                },
+                {
+                    "PropertyCode": "NetSurfaceArea",
+                    "Code": "NetSurfaceArea_from_BodyGeometryValidation",
+                    "PropertySet": "Qto_BodyGeometryValidation"
+                },
+                {
+                    "PropertyCode": "NetVolume",
+                    "Code": "NetVolume_from_BodyGeometryValidation",
+                    "PropertySet": "Qto_BodyGeometryValidation"
+                },
+                {
+                    "PropertyCode": "SurfaceGenusAfterFeatures",
+                    "Code": "SurfaceGenusAfterFeatures_from_BodyGeom...lidation",
+                    "PropertySet": "Qto_BodyGeometryValidation"
+                },
+                {
+                    "PropertyCode": "SurfaceGenusBeforeFeatures",
+                    "Code": "SurfaceGenusBeforeFeatures_from_BodyGeo...idation",
+                    "PropertySet": "Qto_BodyGeometryValidation"
+                },
+                {
+                    "PropertyCode": "ElevationalFlatness",
+                    "Code": "ElevationalFlatness_from_Tolerance",
+                    "PropertySet": "Pset_Tolerance"
+                },
+                {
+                    "PropertyCode": "HorizontalFlatness",
+                    "Code": "HorizontalFlatness_from_Tolerance",
+                    "PropertySet": "Pset_Tolerance"
+                },
+                {
+                    "PropertyCode": "HorizontalOrthogonality",
+                    "Code": "HorizontalOrthogonality_from_Tolerance",
+                    "PropertySet": "Pset_Tolerance"
+                },
+                {
+                    "PropertyCode": "HorizontalStraightness",
+                    "Code": "HorizontalStraightness_from_Tolerance",
+                    "PropertySet": "Pset_Tolerance"
+                },
+                {
+                    "PropertyCode": "HorizontalTolerance",
+                    "Code": "HorizontalTolerance_from_Tolerance",
+                    "PropertySet": "Pset_Tolerance"
+                },
+                {
+                    "PropertyCode": "OrthogonalOrthogonality",
+                    "Code": "OrthogonalOrthogonality_from_Tolerance",
+                    "PropertySet": "Pset_Tolerance"
+                },
+                {
+                    "PropertyCode": "OrthogonalStraightness",
+                    "Code": "OrthogonalStraightness_from_Tolerance",
+                    "PropertySet": "Pset_Tolerance"
+                },
+                {
+                    "PropertyCode": "OrthogonalTolerance",
+                    "Code": "OrthogonalTolerance_from_Tolerance",
+                    "PropertySet": "Pset_Tolerance"
+                },
+                {
+                    "PropertyCode": "OverallOrthogonality",
+                    "Code": "OverallOrthogonality_from_Tolerance",
+                    "PropertySet": "Pset_Tolerance"
+                },
+                {
+                    "PropertyCode": "OverallStraightness",
+                    "Code": "OverallStraightness_from_Tolerance",
+                    "PropertySet": "Pset_Tolerance"
+                },
+                {
+                    "PropertyCode": "OverallTolerance",
+                    "Code": "OverallTolerance_from_Tolerance",
+                    "PropertySet": "Pset_Tolerance"
+                },
+                {
+                    "PropertyCode": "PlanarFlatness",
+                    "Code": "PlanarFlatness_from_Tolerance",
+                    "PropertySet": "Pset_Tolerance"
+                },
+                {
+                    "PropertyCode": "SideFlatness",
+                    "Code": "SideFlatness_from_Tolerance",
+                    "PropertySet": "Pset_Tolerance"
+                },
+                {
+                    "PropertyCode": "ToleranceBasis",
+                    "Code": "ToleranceBasis_from_Tolerance",
+                    "PropertySet": "Pset_Tolerance"
+                },
+                {
+                    "PropertyCode": "ToleranceDescription",
+                    "Code": "ToleranceDescription_from_Tolerance",
+                    "PropertySet": "Pset_Tolerance"
+                },
+                {
+                    "PropertyCode": "VerticalOrthogonality",
+                    "Code": "VerticalOrthogonality_from_Tolerance",
+                    "PropertySet": "Pset_Tolerance"
+                },
+                {
+                    "PropertyCode": "VerticalStraightness",
+                    "Code": "VerticalStraightness_from_Tolerance",
+                    "PropertySet": "Pset_Tolerance"
+                },
+                {
+                    "PropertyCode": "VerticalTolerance",
+                    "Code": "VerticalTolerance_from_Tolerance",
+                    "PropertySet": "Pset_Tolerance"
+                },
+                {
+                    "PropertyCode": "HorizontalUncertainty",
+                    "Code": "HorizontalUncertainty_from_Uncertainty",
+                    "PropertySet": "Pset_Uncertainty"
+                },
+                {
+                    "PropertyCode": "LinearUncertainty",
+                    "Code": "LinearUncertainty_from_Uncertainty",
+                    "PropertySet": "Pset_Uncertainty"
+                },
+                {
+                    "PropertyCode": "OrthogonalUncertainty",
+                    "Code": "OrthogonalUncertainty_from_Uncertainty",
+                    "PropertySet": "Pset_Uncertainty"
+                },
+                {
+                    "PropertyCode": "UncertaintyBasis",
+                    "Code": "UncertaintyBasis_from_Uncertainty",
+                    "PropertySet": "Pset_Uncertainty"
+                },
+                {
+                    "PropertyCode": "UncertaintyDescription",
+                    "Code": "UncertaintyDescription_from_Uncertainty",
+                    "PropertySet": "Pset_Uncertainty"
+                },
+                {
+                    "PropertyCode": "VerticalUncertainty",
+                    "Code": "VerticalUncertainty_from_Uncertainty",
+                    "PropertySet": "Pset_Uncertainty"
+                },
+                {
+                    "PropertyCode": "AssociatedActivity",
+                    "Code": "AssociatedActivity_from_Risk",
+                    "PropertySet": "Pset_Risk"
+                },
+                {
+                    "PropertyCode": "AssociatedLocation",
+                    "Code": "AssociatedLocation_from_Risk",
+                    "PropertySet": "Pset_Risk"
+                },
+                {
+                    "PropertyCode": "AssociatedProduct",
+                    "Code": "AssociatedProduct_from_Risk",
+                    "PropertySet": "Pset_Risk"
+                },
+                {
+                    "PropertyCode": "MitigatedRiskConsequence",
+                    "Code": "MitigatedRiskConsequence_from_Risk",
+                    "PropertySet": "Pset_Risk"
+                },
+                {
+                    "PropertyCode": "MitigatedRiskLikelihood",
+                    "Code": "MitigatedRiskLikelihood_from_Risk",
+                    "PropertySet": "Pset_Risk"
+                },
+                {
+                    "PropertyCode": "MitigatedRiskSignificance",
+                    "Code": "MitigatedRiskSignificance_from_Risk",
+                    "PropertySet": "Pset_Risk"
+                },
+                {
+                    "PropertyCode": "MitigationPlanned",
+                    "Code": "MitigationPlanned_from_Risk",
+                    "PropertySet": "Pset_Risk"
+                },
+                {
+                    "PropertyCode": "MitigationProposed",
+                    "Code": "MitigationProposed_from_Risk",
+                    "PropertySet": "Pset_Risk"
+                },
+                {
+                    "PropertyCode": "NatureOfRisk",
+                    "Code": "NatureOfRisk_from_Risk",
+                    "PropertySet": "Pset_Risk"
+                },
+                {
+                    "PropertyCode": "RiskAssessmentMethodology",
+                    "Code": "RiskAssessmentMethodology_from_Risk",
+                    "PropertySet": "Pset_Risk"
+                },
+                {
+                    "PropertyCode": "RiskName",
+                    "Code": "RiskName_from_Risk",
+                    "PropertySet": "Pset_Risk"
+                },
+                {
+                    "PropertyCode": "RiskType",
+                    "Code": "RiskType_from_Risk",
+                    "PropertySet": "Pset_Risk"
+                },
+                {
+                    "PropertyCode": "UnmitigatedRiskConsequence",
+                    "Code": "UnmitigatedRiskConsequence_from_Risk",
+                    "PropertySet": "Pset_Risk"
+                },
+                {
+                    "PropertyCode": "UnmitigatedRiskLikelihood",
+                    "Code": "UnmitigatedRiskLikelihood_from_Risk",
+                    "PropertySet": "Pset_Risk"
+                },
+                {
+                    "PropertyCode": "UnmitigatedRiskSignificance",
+                    "Code": "UnmitigatedRiskSignificance_from_Risk",
+                    "PropertySet": "Pset_Risk"
+                },
+                {
+                    "PropertyCode": "ObjectType",
+                    "Code": "ObjectType_from_Attributes",
+                    "PropertySet": "Attributes"
+                },
+                {
+                    "PropertyCode": "Description",
+                    "Code": "Description_from_Attributes",
+                    "PropertySet": "Attributes"
+                },
+                {
+                    "PropertyCode": "GlobalId",
+                    "Code": "GlobalId_from_Attributes",
+                    "PropertySet": "Attributes"
+                },
+                {
+                    "PropertyCode": "Name",
+                    "Code": "Name_from_Attributes",
+                    "PropertySet": "Attributes"
+                }
+            ],
+            "Uid": "88e31a97-fc93-413c-9a8f-f55d4f201c19",
+            "ParentClassCode": "IfcDistributionControlElement"
+        },
+        {
+            "Code": "IfcAlarm",
+            "Name": "Alarm",
+            "Definition": "An alarm is a device that signals the existence of a condition or situation that is outside the boundaries of normal expectation or that activates such a device.",
+            "ClassType": "Class",
+            "ClassProperties": [
+                {
+                    "PropertyCode": "Acknowledge",
+                    "Code": "Acknowledge_from_AlarmPHistory",
+                    "PropertySet": "Pset_AlarmPHistory"
+                },
+                {
+                    "PropertyCode": "ConditionHistory",
+                    "Code": "ConditionHistory_from_AlarmPHistory",
+                    "PropertySet": "Pset_AlarmPHistory"
+                },
+                {
+                    "PropertyCode": "Enabled",
+                    "Code": "Enabled_from_AlarmPHistory",
+                    "PropertySet": "Pset_AlarmPHistory"
+                },
+                {
+                    "PropertyCode": "Severity",
+                    "Code": "Severity_from_AlarmPHistory",
+                    "PropertySet": "Pset_AlarmPHistory"
+                },
+                {
+                    "PropertyCode": "UserHistory",
+                    "Code": "UserHistory_from_AlarmPHistory",
+                    "PropertySet": "Pset_AlarmPHistory"
+                },
+                {
+                    "PropertyCode": "AlarmCondition",
+                    "Code": "AlarmCondition_from_AlarmTypeCommon",
+                    "PropertySet": "Pset_AlarmTypeCommon"
+                },
+                {
+                    "PropertyCode": "Status",
+                    "Code": "Status_from_AlarmTypeCommon",
+                    "PropertySet": "Pset_AlarmTypeCommon"
+                },
+                {
+                    "PropertyCode": "GrossWeight",
+                    "Code": "GrossWeight_from_AlarmBaseQuantities",
+                    "PropertySet": "Qto_AlarmBaseQuantities"
+                },
+                {
+                    "PropertyCode": "ConductorFunction",
+                    "Code": "ConductorFunction_from_ElectricalDeviceCommon",
+                    "PropertySet": "Pset_ElectricalDeviceCommon"
+                },
+                {
+                    "PropertyCode": "EarthingStyle",
+                    "Code": "EarthingStyle_from_ElectricalDeviceCommon",
+                    "PropertySet": "Pset_ElectricalDeviceCommon"
+                },
+                {
+                    "PropertyCode": "HasProtectiveEarth",
+                    "Code": "HasProtectiveEarth_from_ElectricalDeviceCommon",
+                    "PropertySet": "Pset_ElectricalDeviceCommon"
+                },
+                {
+                    "PropertyCode": "HeatDissipation",
+                    "Code": "HeatDissipation_from_ElectricalDeviceCommon",
+                    "PropertySet": "Pset_ElectricalDeviceCommon"
+                },
+                {
+                    "PropertyCode": "IK_Code",
+                    "Code": "IK_Code_from_ElectricalDeviceCommon",
+                    "PropertySet": "Pset_ElectricalDeviceCommon"
+                },
+                {
+                    "PropertyCode": "InsulationStandardClass",
+                    "Code": "InsulationStandardClass_from_Electrica...iceCommon",
+                    "PropertySet": "Pset_ElectricalDeviceCommon"
+                },
+                {
+                    "PropertyCode": "IP_Code",
+                    "Code": "IP_Code_from_ElectricalDeviceCommon",
+                    "PropertySet": "Pset_ElectricalDeviceCommon"
+                },
+                {
+                    "PropertyCode": "NominalFrequencyRange",
+                    "Code": "NominalFrequencyRange_from_ElectricalDeviceCommon",
+                    "PropertySet": "Pset_ElectricalDeviceCommon"
+                },
+                {
+                    "PropertyCode": "NominalPowerConsumption",
+                    "Code": "NominalPowerConsumption_from_Electrica...iceCommon",
+                    "PropertySet": "Pset_ElectricalDeviceCommon"
+                },
+                {
+                    "PropertyCode": "NumberOfPoles",
+                    "Code": "NumberOfPoles_from_ElectricalDeviceCommon",
+                    "PropertySet": "Pset_ElectricalDeviceCommon"
+                },
+                {
+                    "PropertyCode": "NumberOfPowerSupplyPorts",
+                    "Code": "NumberOfPowerSupplyPorts_from_Electric...ceCommon",
+                    "PropertySet": "Pset_ElectricalDeviceCommon"
+                },
+                {
+                    "PropertyCode": "Power",
+                    "Code": "Power_from_ElectricalDeviceCommon",
+                    "PropertySet": "Pset_ElectricalDeviceCommon"
+                },
+                {
+                    "PropertyCode": "PowerFactor",
+                    "Code": "PowerFactor_from_ElectricalDeviceCommon",
+                    "PropertySet": "Pset_ElectricalDeviceCommon"
+                },
+                {
+                    "PropertyCode": "RatedCurrent",
+                    "Code": "RatedCurrent_from_ElectricalDeviceCommon",
+                    "PropertySet": "Pset_ElectricalDeviceCommon"
+                },
+                {
+                    "PropertyCode": "RatedVoltage",
+                    "Code": "RatedVoltage_from_ElectricalDeviceCommon",
+                    "PropertySet": "Pset_ElectricalDeviceCommon"
+                },
+                {
+                    "PropertyCode": "EnergyConsumption",
+                    "Code": "EnergyConsumption_from_EnergyRequirements",
+                    "PropertySet": "Pset_EnergyRequirements"
+                },
+                {
+                    "PropertyCode": "EnergyConversionEfficiency",
+                    "Code": "EnergyConversionEfficiency_from_EnergyRequirements",
+                    "PropertySet": "Pset_EnergyRequirements"
+                },
+                {
+                    "PropertyCode": "EnergySourceLabel",
+                    "Code": "EnergySourceLabel_from_EnergyRequirements",
+                    "PropertySet": "Pset_EnergyRequirements"
+                },
+                {
+                    "PropertyCode": "PowerDemand",
+                    "Code": "PowerDemand_from_EnergyRequirements",
+                    "PropertySet": "Pset_EnergyRequirements"
+                },
+                {
+                    "PropertyCode": "CarbonDioxideEmissions",
+                    "Code": "CarbonDioxideEmissions_from_EnvironmentalEmissions",
+                    "PropertySet": "Pset_EnvironmentalEmissions"
+                },
+                {
+                    "PropertyCode": "NitrogenOxidesEmissions",
+                    "Code": "NitrogenOxidesEmissions_from_Environme...Emissions",
+                    "PropertySet": "Pset_EnvironmentalEmissions"
+                },
+                {
+                    "PropertyCode": "NoiseEmissions",
+                    "Code": "NoiseEmissions_from_EnvironmentalEmissions",
+                    "PropertySet": "Pset_EnvironmentalEmissions"
+                },
+                {
+                    "PropertyCode": "ParticulateMatterEmissions",
+                    "Code": "ParticulateMatterEmissions_from_Environ...issions",
+                    "PropertySet": "Pset_EnvironmentalEmissions"
+                },
+                {
+                    "PropertyCode": "SulphurDioxideEmissions",
+                    "Code": "SulphurDioxideEmissions_from_Environme...Emissions",
+                    "PropertySet": "Pset_EnvironmentalEmissions"
+                },
+                {
+                    "PropertyCode": "ElectroMagneticStandardsCompliance",
+                    "Code": "ElectroMagneticStandardsCompliance_from_Ele...nce",
+                    "PropertySet": "Pset_ElectricalDeviceCompliance"
+                },
+                {
+                    "PropertyCode": "ExplosiveAtmosphereStandardsCompliance",
+                    "Code": "ExplosiveAtmosphereStandardsCompliance_from_E...e",
+                    "PropertySet": "Pset_ElectricalDeviceCompliance"
+                },
+                {
+                    "PropertyCode": "FireProofingStandardsCompliance",
+                    "Code": "FireProofingStandardsCompliance_from_Elect...iance",
+                    "PropertySet": "Pset_ElectricalDeviceCompliance"
+                },
+                {
+                    "PropertyCode": "LightningProtectionStandardsCompliance",
+                    "Code": "LightningProtectionStandardsCompliance_from_E...e",
+                    "PropertySet": "Pset_ElectricalDeviceCompliance"
+                },
+                {
+                    "PropertyCode": "AtmosphericAcidificationPerUnit",
+                    "Code": "AtmosphericAcidificationPerUnit_from_Envir...ators",
+                    "PropertySet": "Pset_EnvironmentalImpactIndicators"
+                },
+                {
+                    "PropertyCode": "ClimateChangePerUnit",
+                    "Code": "ClimateChangePerUnit_from_Environmen...Indicators",
+                    "PropertySet": "Pset_EnvironmentalImpactIndicators"
+                },
+                {
+                    "PropertyCode": "EutrophicationPerUnit",
+                    "Code": "EutrophicationPerUnit_from_Environmen...Indicators",
+                    "PropertySet": "Pset_EnvironmentalImpactIndicators"
+                },
+                {
+                    "PropertyCode": "ExpectedServiceLife",
+                    "Code": "ExpectedServiceLife_from_Environment...tIndicators",
+                    "PropertySet": "Pset_EnvironmentalImpactIndicators"
+                },
+                {
+                    "PropertyCode": "FunctionalUnitReference",
+                    "Code": "FunctionalUnitReference_from_Environme...ndicators",
+                    "PropertySet": "Pset_EnvironmentalImpactIndicators"
+                },
+                {
+                    "PropertyCode": "HazardousWastePerUnit",
+                    "Code": "HazardousWastePerUnit_from_Environmen...Indicators",
+                    "PropertySet": "Pset_EnvironmentalImpactIndicators"
+                },
+                {
+                    "PropertyCode": "IndicatorsUnit",
+                    "Code": "IndicatorsUnit_from_EnvironmentalImpactIndicators",
+                    "PropertySet": "Pset_EnvironmentalImpactIndicators"
+                },
+                {
+                    "PropertyCode": "InertWastePerUnit",
+                    "Code": "InertWastePerUnit_from_Environmenta...ctIndicators",
+                    "PropertySet": "Pset_EnvironmentalImpactIndicators"
+                },
+                {
+                    "PropertyCode": "LifeCyclePhase",
+                    "Code": "LifeCyclePhase_from_EnvironmentalImpactIndicators",
+                    "PropertySet": "Pset_EnvironmentalImpactIndicators"
+                },
+                {
+                    "PropertyCode": "NonHazardousWastePerUnit",
+                    "Code": "NonHazardousWastePerUnit_from_Environm...dicators",
+                    "PropertySet": "Pset_EnvironmentalImpactIndicators"
+                },
+                {
+                    "PropertyCode": "NonRenewableEnergyConsumptionPerUnit",
+                    "Code": "NonRenewableEnergyConsumptionPerUnit_from_En...rs",
+                    "PropertySet": "Pset_EnvironmentalImpactIndicators"
+                },
+                {
+                    "PropertyCode": "PhotochemicalOzoneFormationPerUnit",
+                    "Code": "PhotochemicalOzoneFormationPerUnit_from_Env...ors",
+                    "PropertySet": "Pset_EnvironmentalImpactIndicators"
+                },
+                {
+                    "PropertyCode": "RadioactiveWastePerUnit",
+                    "Code": "RadioactiveWastePerUnit_from_Environme...ndicators",
+                    "PropertySet": "Pset_EnvironmentalImpactIndicators"
+                },
+                {
+                    "PropertyCode": "RenewableEnergyConsumptionPerUnit",
+                    "Code": "RenewableEnergyConsumptionPerUnit_from_Envi...tors",
+                    "PropertySet": "Pset_EnvironmentalImpactIndicators"
+                },
+                {
+                    "PropertyCode": "ResourceDepletionPerUnit",
+                    "Code": "ResourceDepletionPerUnit_from_Environm...dicators",
+                    "PropertySet": "Pset_EnvironmentalImpactIndicators"
+                },
+                {
+                    "PropertyCode": "StratosphericOzoneLayerDestructionPerUnit",
+                    "Code": "StratosphericOzoneLayerDestructionPerUnit_from_...",
+                    "PropertySet": "Pset_EnvironmentalImpactIndicators"
+                },
+                {
+                    "PropertyCode": "TotalPrimaryEnergyConsumptionPerUnit",
+                    "Code": "TotalPrimaryEnergyConsumptionPerUnit_from_En...rs",
+                    "PropertySet": "Pset_EnvironmentalImpactIndicators"
+                },
+                {
+                    "PropertyCode": "WaterConsumptionPerUnit",
+                    "Code": "WaterConsumptionPerUnit_from_Environme...ndicators",
+                    "PropertySet": "Pset_EnvironmentalImpactIndicators"
+                },
+                {
+                    "PropertyCode": "AtmosphericAcidification",
+                    "Code": "AtmosphericAcidification_from_Environm...ctValues",
+                    "PropertySet": "Pset_EnvironmentalImpactValues"
+                },
+                {
+                    "PropertyCode": "ClimateChange",
+                    "Code": "ClimateChange_from_EnvironmentalImpactValues",
+                    "PropertySet": "Pset_EnvironmentalImpactValues"
+                },
+                {
+                    "PropertyCode": "Duration",
+                    "Code": "Duration_from_EnvironmentalImpactValues",
+                    "PropertySet": "Pset_EnvironmentalImpactValues"
+                },
+                {
+                    "PropertyCode": "Eutrophication",
+                    "Code": "Eutrophication_from_EnvironmentalImpactValues",
+                    "PropertySet": "Pset_EnvironmentalImpactValues"
+                },
+                {
+                    "PropertyCode": "HazardousWaste",
+                    "Code": "HazardousWaste_from_EnvironmentalImpactValues",
+                    "PropertySet": "Pset_EnvironmentalImpactValues"
+                },
+                {
+                    "PropertyCode": "InertWaste",
+                    "Code": "InertWaste_from_EnvironmentalImpactValues",
+                    "PropertySet": "Pset_EnvironmentalImpactValues"
+                },
+                {
+                    "PropertyCode": "LeadInTime",
+                    "Code": "LeadInTime_from_EnvironmentalImpactValues",
+                    "PropertySet": "Pset_EnvironmentalImpactValues"
+                },
+                {
+                    "PropertyCode": "LeadOutTime",
+                    "Code": "LeadOutTime_from_EnvironmentalImpactValues",
+                    "PropertySet": "Pset_EnvironmentalImpactValues"
+                },
+                {
+                    "PropertyCode": "NonHazardousWaste",
+                    "Code": "NonHazardousWaste_from_EnvironmentalImpactValues",
+                    "PropertySet": "Pset_EnvironmentalImpactValues"
+                },
+                {
+                    "PropertyCode": "NonRenewableEnergyConsumption",
+                    "Code": "NonRenewableEnergyConsumption_from_Enviro...Values",
+                    "PropertySet": "Pset_EnvironmentalImpactValues"
+                },
+                {
+                    "PropertyCode": "PhotochemicalOzoneFormation",
+                    "Code": "PhotochemicalOzoneFormation_from_Environ...tValues",
+                    "PropertySet": "Pset_EnvironmentalImpactValues"
+                },
+                {
+                    "PropertyCode": "RadioactiveWaste",
+                    "Code": "RadioactiveWaste_from_EnvironmentalImpactValues",
+                    "PropertySet": "Pset_EnvironmentalImpactValues"
+                },
+                {
+                    "PropertyCode": "RenewableEnergyConsumption",
+                    "Code": "RenewableEnergyConsumption_from_Environ...tValues",
+                    "PropertySet": "Pset_EnvironmentalImpactValues"
+                },
+                {
+                    "PropertyCode": "ResourceDepletion",
+                    "Code": "ResourceDepletion_from_EnvironmentalImpactValues",
+                    "PropertySet": "Pset_EnvironmentalImpactValues"
+                },
+                {
+                    "PropertyCode": "StratosphericOzoneLayerDestruction",
+                    "Code": "StratosphericOzoneLayerDestruction_from_Env...ues",
+                    "PropertySet": "Pset_EnvironmentalImpactValues"
+                },
+                {
+                    "PropertyCode": "TotalPrimaryEnergyConsumption",
+                    "Code": "TotalPrimaryEnergyConsumption_from_Enviro...Values",
+                    "PropertySet": "Pset_EnvironmentalImpactValues"
+                },
+                {
+                    "PropertyCode": "WaterConsumption",
+                    "Code": "WaterConsumption_from_EnvironmentalImpactValues",
+                    "PropertySet": "Pset_EnvironmentalImpactValues"
+                },
+                {
+                    "PropertyCode": "MaximumAtmosphericPressure",
+                    "Code": "MaximumAtmosphericPressure_from_Environ...ndition",
+                    "PropertySet": "Pset_EnvironmentalCondition"
+                },
+                {
+                    "PropertyCode": "MaximumRainIntensity",
+                    "Code": "MaximumRainIntensity_from_EnvironmentalCondition",
+                    "PropertySet": "Pset_EnvironmentalCondition"
+                },
+                {
+                    "PropertyCode": "MaximumSolarRadiation",
+                    "Code": "MaximumSolarRadiation_from_EnvironmentalCondition",
+                    "PropertySet": "Pset_EnvironmentalCondition"
+                },
+                {
+                    "PropertyCode": "MaximumWindSpeed",
+                    "Code": "MaximumWindSpeed_from_EnvironmentalCondition",
+                    "PropertySet": "Pset_EnvironmentalCondition"
+                },
+                {
+                    "PropertyCode": "OperationalTemperatureRange",
+                    "Code": "OperationalTemperatureRange_from_Environ...ndition",
+                    "PropertySet": "Pset_EnvironmentalCondition"
+                },
+                {
+                    "PropertyCode": "ReferenceAirRelativeHumidity",
+                    "Code": "ReferenceAirRelativeHumidity_from_Enviro...dition",
+                    "PropertySet": "Pset_EnvironmentalCondition"
+                },
+                {
+                    "PropertyCode": "ReferenceEnvironmentTemperature",
+                    "Code": "ReferenceEnvironmentTemperature_from_Envir...ition",
+                    "PropertySet": "Pset_EnvironmentalCondition"
+                },
+                {
+                    "PropertyCode": "SaltMistLevel",
+                    "Code": "SaltMistLevel_from_EnvironmentalCondition",
+                    "PropertySet": "Pset_EnvironmentalCondition"
+                },
+                {
+                    "PropertyCode": "SeismicResistance",
+                    "Code": "SeismicResistance_from_EnvironmentalCondition",
+                    "PropertySet": "Pset_EnvironmentalCondition"
+                },
+                {
+                    "PropertyCode": "SmokeLevel",
+                    "Code": "SmokeLevel_from_EnvironmentalCondition",
+                    "PropertySet": "Pset_EnvironmentalCondition"
+                },
+                {
+                    "PropertyCode": "StorageTemperatureRange",
+                    "Code": "StorageTemperatureRange_from_Environme...Condition",
+                    "PropertySet": "Pset_EnvironmentalCondition"
+                },
+                {
+                    "PropertyCode": "AcceptanceDate",
+                    "Code": "AcceptanceDate_from_InstallationOccurrence",
+                    "PropertySet": "Pset_InstallationOccurrence"
+                },
+                {
+                    "PropertyCode": "InstallationDate",
+                    "Code": "InstallationDate_from_InstallationOccurrence",
+                    "PropertySet": "Pset_InstallationOccurrence"
+                },
+                {
+                    "PropertyCode": "PutIntoOperationDate",
+                    "Code": "PutIntoOperationDate_from_InstallationOccurrence",
+                    "PropertySet": "Pset_InstallationOccurrence"
+                },
+                {
+                    "PropertyCode": "MeanTimeToRepair",
+                    "Code": "MeanTimeToRepair_from_RepairOccurrence",
+                    "PropertySet": "Pset_RepairOccurrence"
+                },
+                {
+                    "PropertyCode": "RepairContent",
+                    "Code": "RepairContent_from_RepairOccurrence",
+                    "PropertySet": "Pset_RepairOccurrence"
+                },
+                {
+                    "PropertyCode": "RepairDate",
+                    "Code": "RepairDate_from_RepairOccurrence",
+                    "PropertySet": "Pset_RepairOccurrence"
+                },
+                {
+                    "PropertyCode": "AssessmentCondition",
+                    "Code": "AssessmentCondition_from_Condition",
+                    "PropertySet": "Pset_Condition"
+                },
+                {
+                    "PropertyCode": "AssessmentDate",
+                    "Code": "AssessmentDate_from_Condition",
+                    "PropertySet": "Pset_Condition"
+                },
+                {
+                    "PropertyCode": "AssessmentDescription",
+                    "Code": "AssessmentDescription_from_Condition",
+                    "PropertySet": "Pset_Condition"
+                },
+                {
+                    "PropertyCode": "AssessmentFrequency",
+                    "Code": "AssessmentFrequency_from_Condition",
+                    "PropertySet": "Pset_Condition"
+                },
+                {
+                    "PropertyCode": "AssessmentMethod",
+                    "Code": "AssessmentMethod_from_Condition",
+                    "PropertySet": "Pset_Condition"
+                },
+                {
+                    "PropertyCode": "AssessmentType",
+                    "Code": "AssessmentType_from_Condition",
+                    "PropertySet": "Pset_Condition"
+                },
+                {
+                    "PropertyCode": "LastAssessmentReport",
+                    "Code": "LastAssessmentReport_from_Condition",
+                    "PropertySet": "Pset_Condition"
+                },
+                {
+                    "PropertyCode": "NextAssessmentDate",
+                    "Code": "NextAssessmentDate_from_Condition",
+                    "PropertySet": "Pset_Condition"
+                },
+                {
+                    "PropertyCode": "ProcurementMethod",
+                    "Code": "ProcurementMethod_from_ConstructionAdministration",
+                    "PropertySet": "Pset_ConstructionAdministration"
+                },
+                {
+                    "PropertyCode": "SpecificationSectionNumber",
+                    "Code": "SpecificationSectionNumber_from_Constru...tration",
+                    "PropertySet": "Pset_ConstructionAdministration"
+                },
+                {
+                    "PropertyCode": "SubmittalIdentifer",
+                    "Code": "SubmittalIdentifer_from_ConstructionAdministration",
+                    "PropertySet": "Pset_ConstructionAdministration"
+                },
+                {
+                    "PropertyCode": "AssetIdentifier",
+                    "Code": "AssetIdentifier_from_ConstructionOccurence",
+                    "PropertySet": "Pset_ConstructionOccurence"
+                },
+                {
+                    "PropertyCode": "InstallationDate",
+                    "Code": "InstallationDate_from_ConstructionOccurence",
+                    "PropertySet": "Pset_ConstructionOccurence"
+                },
+                {
+                    "PropertyCode": "ModelNumber",
+                    "Code": "ModelNumber_from_ConstructionOccurence",
+                    "PropertySet": "Pset_ConstructionOccurence"
+                },
+                {
+                    "PropertyCode": "TagNumber",
+                    "Code": "TagNumber_from_ConstructionOccurence",
+                    "PropertySet": "Pset_ConstructionOccurence"
+                },
+                {
+                    "PropertyCode": "AccidentResponse",
+                    "Code": "AccidentResponse_from_MaintenanceStrategy",
+                    "PropertySet": "Pset_MaintenanceStrategy"
+                },
+                {
+                    "PropertyCode": "AssetCriticality",
+                    "Code": "AssetCriticality_from_MaintenanceStrategy",
+                    "PropertySet": "Pset_MaintenanceStrategy"
+                },
+                {
+                    "PropertyCode": "AssetFrailty",
+                    "Code": "AssetFrailty_from_MaintenanceStrategy",
+                    "PropertySet": "Pset_MaintenanceStrategy"
+                },
+                {
+                    "PropertyCode": "AssetPriority",
+                    "Code": "AssetPriority_from_MaintenanceStrategy",
+                    "PropertySet": "Pset_MaintenanceStrategy"
+                },
+                {
+                    "PropertyCode": "MonitoringType",
+                    "Code": "MonitoringType_from_MaintenanceStrategy",
+                    "PropertySet": "Pset_MaintenanceStrategy"
+                },
+                {
+                    "PropertyCode": "ConditionDisposalLevel",
+                    "Code": "ConditionDisposalLevel_from_Maintenan...Condition",
+                    "PropertySet": "Pset_MaintenanceTriggerCondition"
+                },
+                {
+                    "PropertyCode": "ConditionMaintenanceLevel",
+                    "Code": "ConditionMaintenanceLevel_from_Maintena...ondition",
+                    "PropertySet": "Pset_MaintenanceTriggerCondition"
+                },
+                {
+                    "PropertyCode": "ConditionReplacementLevel",
+                    "Code": "ConditionReplacementLevel_from_Maintena...ondition",
+                    "PropertySet": "Pset_MaintenanceTriggerCondition"
+                },
+                {
+                    "PropertyCode": "ConditionTargetPerformance",
+                    "Code": "ConditionTargetPerformance_from_Mainten...ndition",
+                    "PropertySet": "Pset_MaintenanceTriggerCondition"
+                },
+                {
+                    "PropertyCode": "DurationDisposalLevel",
+                    "Code": "DurationDisposalLevel_from_Maintenanc...erDuration",
+                    "PropertySet": "Pset_MaintenanceTriggerDuration"
+                },
+                {
+                    "PropertyCode": "DurationMaintenanceLevel",
+                    "Code": "DurationMaintenanceLevel_from_Maintena...Duration",
+                    "PropertySet": "Pset_MaintenanceTriggerDuration"
+                },
+                {
+                    "PropertyCode": "DurationReplacementLevel",
+                    "Code": "DurationReplacementLevel_from_Maintena...Duration",
+                    "PropertySet": "Pset_MaintenanceTriggerDuration"
+                },
+                {
+                    "PropertyCode": "DurationTargetPerformance",
+                    "Code": "DurationTargetPerformance_from_Maintena...Duration",
+                    "PropertySet": "Pset_MaintenanceTriggerDuration"
+                },
+                {
+                    "PropertyCode": "DisposalLevel",
+                    "Code": "DisposalLevel_from_MaintenanceTriggerPerformance",
+                    "PropertySet": "Pset_MaintenanceTriggerPerformance"
+                },
+                {
+                    "PropertyCode": "PerformanceMaintenanceLevel",
+                    "Code": "PerformanceMaintenanceLevel_from_Mainten...ormance",
+                    "PropertySet": "Pset_MaintenanceTriggerPerformance"
+                },
+                {
+                    "PropertyCode": "ReplacementLevel",
+                    "Code": "ReplacementLevel_from_MaintenanceT...rPerformance",
+                    "PropertySet": "Pset_MaintenanceTriggerPerformance"
+                },
+                {
+                    "PropertyCode": "TargetPerformance",
+                    "Code": "TargetPerformance_from_MaintenanceT...rPerformance",
+                    "PropertySet": "Pset_MaintenanceTriggerPerformance"
+                },
+                {
+                    "PropertyCode": "AcquisitionDate",
+                    "Code": "AcquisitionDate_from_ManufacturerOccurrence",
+                    "PropertySet": "Pset_ManufacturerOccurrence"
+                },
+                {
+                    "PropertyCode": "AssemblyPlace",
+                    "Code": "AssemblyPlace_from_ManufacturerOccurrence",
+                    "PropertySet": "Pset_ManufacturerOccurrence"
+                },
+                {
+                    "PropertyCode": "BarCode",
+                    "Code": "BarCode_from_ManufacturerOccurrence",
+                    "PropertySet": "Pset_ManufacturerOccurrence"
+                },
+                {
+                    "PropertyCode": "BatchReference",
+                    "Code": "BatchReference_from_ManufacturerOccurrence",
+                    "PropertySet": "Pset_ManufacturerOccurrence"
+                },
+                {
+                    "PropertyCode": "ManufacturingDate",
+                    "Code": "ManufacturingDate_from_ManufacturerOccurrence",
+                    "PropertySet": "Pset_ManufacturerOccurrence"
+                },
+                {
+                    "PropertyCode": "SerialNumber",
+                    "Code": "SerialNumber_from_ManufacturerOccurrence",
+                    "PropertySet": "Pset_ManufacturerOccurrence"
+                },
+                {
+                    "PropertyCode": "ArticleNumber",
+                    "Code": "ArticleNumber_from_ManufacturerTypeInformation",
+                    "PropertySet": "Pset_ManufacturerTypeInformation"
+                },
+                {
+                    "PropertyCode": "AssemblyPlace",
+                    "Code": "AssemblyPlace_from_ManufacturerTypeInformation",
+                    "PropertySet": "Pset_ManufacturerTypeInformation"
+                },
+                {
+                    "PropertyCode": "GlobalTradeItemNumber",
+                    "Code": "GlobalTradeItemNumber_from_Manufactur...nformation",
+                    "PropertySet": "Pset_ManufacturerTypeInformation"
+                },
+                {
+                    "PropertyCode": "Manufacturer",
+                    "Code": "Manufacturer_from_ManufacturerTypeInformation",
+                    "PropertySet": "Pset_ManufacturerTypeInformation"
+                },
+                {
+                    "PropertyCode": "ModelLabel",
+                    "Code": "ModelLabel_from_ManufacturerTypeInformation",
+                    "PropertySet": "Pset_ManufacturerTypeInformation"
+                },
+                {
+                    "PropertyCode": "ModelReference",
+                    "Code": "ModelReference_from_ManufacturerTypeInformation",
+                    "PropertySet": "Pset_ManufacturerTypeInformation"
+                },
+                {
+                    "PropertyCode": "OperationalDocument",
+                    "Code": "OperationalDocument_from_Manufacture...Information",
+                    "PropertySet": "Pset_ManufacturerTypeInformation"
+                },
+                {
+                    "PropertyCode": "PerformanceCertificate",
+                    "Code": "PerformanceCertificate_from_Manufactu...formation",
+                    "PropertySet": "Pset_ManufacturerTypeInformation"
+                },
+                {
+                    "PropertyCode": "ProductionYear",
+                    "Code": "ProductionYear_from_ManufacturerTypeInformation",
+                    "PropertySet": "Pset_ManufacturerTypeInformation"
+                },
+                {
+                    "PropertyCode": "SafetyDocument",
+                    "Code": "SafetyDocument_from_ManufacturerTypeInformation",
+                    "PropertySet": "Pset_ManufacturerTypeInformation"
+                },
+                {
+                    "PropertyCode": "MeanTimeBetweenFailure",
+                    "Code": "MeanTimeBetweenFailure_from_ServiceLife",
+                    "PropertySet": "Pset_ServiceLife"
+                },
+                {
+                    "PropertyCode": "ServiceLifeDuration",
+                    "Code": "ServiceLifeDuration_from_ServiceLife",
+                    "PropertySet": "Pset_ServiceLife"
+                },
+                {
+                    "PropertyCode": "Exclusions",
+                    "Code": "Exclusions_from_Warranty",
+                    "PropertySet": "Pset_Warranty"
+                },
+                {
+                    "PropertyCode": "IsExtendedWarranty",
+                    "Code": "IsExtendedWarranty_from_Warranty",
+                    "PropertySet": "Pset_Warranty"
+                },
+                {
+                    "PropertyCode": "PointOfContact",
+                    "Code": "PointOfContact_from_Warranty",
+                    "PropertySet": "Pset_Warranty"
+                },
+                {
+                    "PropertyCode": "WarrantyContent",
+                    "Code": "WarrantyContent_from_Warranty",
+                    "PropertySet": "Pset_Warranty"
+                },
+                {
+                    "PropertyCode": "WarrantyIdentifier",
+                    "Code": "WarrantyIdentifier_from_Warranty",
+                    "PropertySet": "Pset_Warranty"
+                },
+                {
+                    "PropertyCode": "WarrantyPeriod",
+                    "Code": "WarrantyPeriod_from_Warranty",
+                    "PropertySet": "Pset_Warranty"
+                },
+                {
+                    "PropertyCode": "WarrantyStartDate",
+                    "Code": "WarrantyStartDate_from_Warranty",
+                    "PropertySet": "Pset_Warranty"
+                },
+                {
+                    "PropertyCode": "CyclicPath",
+                    "Code": "CyclicPath_from_ElementKinematics",
+                    "PropertySet": "Pset_ElementKinematics"
+                },
+                {
+                    "PropertyCode": "CyclicRange",
+                    "Code": "CyclicRange_from_ElementKinematics",
+                    "PropertySet": "Pset_ElementKinematics"
+                },
+                {
+                    "PropertyCode": "LinearPath",
+                    "Code": "LinearPath_from_ElementKinematics",
+                    "PropertySet": "Pset_ElementKinematics"
+                },
+                {
+                    "PropertyCode": "LinearRange",
+                    "Code": "LinearRange_from_ElementKinematics",
+                    "PropertySet": "Pset_ElementKinematics"
+                },
+                {
+                    "PropertyCode": "MaximumAngularVelocity",
+                    "Code": "MaximumAngularVelocity_from_ElementKinematics",
+                    "PropertySet": "Pset_ElementKinematics"
+                },
+                {
+                    "PropertyCode": "MaximumConstantSpeed",
+                    "Code": "MaximumConstantSpeed_from_ElementKinematics",
+                    "PropertySet": "Pset_ElementKinematics"
+                },
+                {
+                    "PropertyCode": "MinimumTime",
+                    "Code": "MinimumTime_from_ElementKinematics",
+                    "PropertySet": "Pset_ElementKinematics"
+                },
+                {
+                    "PropertyCode": "Tag",
+                    "Code": "Tag_from_Attributes",
+                    "PropertySet": "Attributes"
+                },
+                {
+                    "PropertyCode": "ElementType",
+                    "Code": "ElementType_from_Attributes",
+                    "PropertySet": "Attributes"
+                },
+                {
+                    "PropertyCode": "GrossSurfaceArea",
+                    "Code": "GrossSurfaceArea_from_BodyGeometryValidation",
+                    "PropertySet": "Qto_BodyGeometryValidation"
+                },
+                {
+                    "PropertyCode": "GrossVolume",
+                    "Code": "GrossVolume_from_BodyGeometryValidation",
+                    "PropertySet": "Qto_BodyGeometryValidation"
+                },
+                {
+                    "PropertyCode": "NetSurfaceArea",
+                    "Code": "NetSurfaceArea_from_BodyGeometryValidation",
+                    "PropertySet": "Qto_BodyGeometryValidation"
+                },
+                {
+                    "PropertyCode": "NetVolume",
+                    "Code": "NetVolume_from_BodyGeometryValidation",
+                    "PropertySet": "Qto_BodyGeometryValidation"
+                },
+                {
+                    "PropertyCode": "SurfaceGenusAfterFeatures",
+                    "Code": "SurfaceGenusAfterFeatures_from_BodyGeom...lidation",
+                    "PropertySet": "Qto_BodyGeometryValidation"
+                },
+                {
+                    "PropertyCode": "SurfaceGenusBeforeFeatures",
+                    "Code": "SurfaceGenusBeforeFeatures_from_BodyGeo...idation",
+                    "PropertySet": "Qto_BodyGeometryValidation"
+                },
+                {
+                    "PropertyCode": "ElevationalFlatness",
+                    "Code": "ElevationalFlatness_from_Tolerance",
+                    "PropertySet": "Pset_Tolerance"
+                },
+                {
+                    "PropertyCode": "HorizontalFlatness",
+                    "Code": "HorizontalFlatness_from_Tolerance",
+                    "PropertySet": "Pset_Tolerance"
+                },
+                {
+                    "PropertyCode": "HorizontalOrthogonality",
+                    "Code": "HorizontalOrthogonality_from_Tolerance",
+                    "PropertySet": "Pset_Tolerance"
+                },
+                {
+                    "PropertyCode": "HorizontalStraightness",
+                    "Code": "HorizontalStraightness_from_Tolerance",
+                    "PropertySet": "Pset_Tolerance"
+                },
+                {
+                    "PropertyCode": "HorizontalTolerance",
+                    "Code": "HorizontalTolerance_from_Tolerance",
+                    "PropertySet": "Pset_Tolerance"
+                },
+                {
+                    "PropertyCode": "OrthogonalOrthogonality",
+                    "Code": "OrthogonalOrthogonality_from_Tolerance",
+                    "PropertySet": "Pset_Tolerance"
+                },
+                {
+                    "PropertyCode": "OrthogonalStraightness",
+                    "Code": "OrthogonalStraightness_from_Tolerance",
+                    "PropertySet": "Pset_Tolerance"
+                },
+                {
+                    "PropertyCode": "OrthogonalTolerance",
+                    "Code": "OrthogonalTolerance_from_Tolerance",
+                    "PropertySet": "Pset_Tolerance"
+                },
+                {
+                    "PropertyCode": "OverallOrthogonality",
+                    "Code": "OverallOrthogonality_from_Tolerance",
+                    "PropertySet": "Pset_Tolerance"
+                },
+                {
+                    "PropertyCode": "OverallStraightness",
+                    "Code": "OverallStraightness_from_Tolerance",
+                    "PropertySet": "Pset_Tolerance"
+                },
+                {
+                    "PropertyCode": "OverallTolerance",
+                    "Code": "OverallTolerance_from_Tolerance",
+                    "PropertySet": "Pset_Tolerance"
+                },
+                {
+                    "PropertyCode": "PlanarFlatness",
+                    "Code": "PlanarFlatness_from_Tolerance",
+                    "PropertySet": "Pset_Tolerance"
+                },
+                {
+                    "PropertyCode": "SideFlatness",
+                    "Code": "SideFlatness_from_Tolerance",
+                    "PropertySet": "Pset_Tolerance"
+                },
+                {
+                    "PropertyCode": "ToleranceBasis",
+                    "Code": "ToleranceBasis_from_Tolerance",
+                    "PropertySet": "Pset_Tolerance"
+                },
+                {
+                    "PropertyCode": "ToleranceDescription",
+                    "Code": "ToleranceDescription_from_Tolerance",
+                    "PropertySet": "Pset_Tolerance"
+                },
+                {
+                    "PropertyCode": "VerticalOrthogonality",
+                    "Code": "VerticalOrthogonality_from_Tolerance",
+                    "PropertySet": "Pset_Tolerance"
+                },
+                {
+                    "PropertyCode": "VerticalStraightness",
+                    "Code": "VerticalStraightness_from_Tolerance",
+                    "PropertySet": "Pset_Tolerance"
+                },
+                {
+                    "PropertyCode": "VerticalTolerance",
+                    "Code": "VerticalTolerance_from_Tolerance",
+                    "PropertySet": "Pset_Tolerance"
+                },
+                {
+                    "PropertyCode": "HorizontalUncertainty",
+                    "Code": "HorizontalUncertainty_from_Uncertainty",
+                    "PropertySet": "Pset_Uncertainty"
+                },
+                {
+                    "PropertyCode": "LinearUncertainty",
+                    "Code": "LinearUncertainty_from_Uncertainty",
+                    "PropertySet": "Pset_Uncertainty"
+                },
+                {
+                    "PropertyCode": "OrthogonalUncertainty",
+                    "Code": "OrthogonalUncertainty_from_Uncertainty",
+                    "PropertySet": "Pset_Uncertainty"
+                },
+                {
+                    "PropertyCode": "UncertaintyBasis",
+                    "Code": "UncertaintyBasis_from_Uncertainty",
+                    "PropertySet": "Pset_Uncertainty"
+                },
+                {
+                    "PropertyCode": "UncertaintyDescription",
+                    "Code": "UncertaintyDescription_from_Uncertainty",
+                    "PropertySet": "Pset_Uncertainty"
+                },
+                {
+                    "PropertyCode": "VerticalUncertainty",
+                    "Code": "VerticalUncertainty_from_Uncertainty",
+                    "PropertySet": "Pset_Uncertainty"
+                },
+                {
+                    "PropertyCode": "AssociatedActivity",
+                    "Code": "AssociatedActivity_from_Risk",
+                    "PropertySet": "Pset_Risk"
+                },
+                {
+                    "PropertyCode": "AssociatedLocation",
+                    "Code": "AssociatedLocation_from_Risk",
+                    "PropertySet": "Pset_Risk"
+                },
+                {
+                    "PropertyCode": "AssociatedProduct",
+                    "Code": "AssociatedProduct_from_Risk",
+                    "PropertySet": "Pset_Risk"
+                },
+                {
+                    "PropertyCode": "MitigatedRiskConsequence",
+                    "Code": "MitigatedRiskConsequence_from_Risk",
+                    "PropertySet": "Pset_Risk"
+                },
+                {
+                    "PropertyCode": "MitigatedRiskLikelihood",
+                    "Code": "MitigatedRiskLikelihood_from_Risk",
+                    "PropertySet": "Pset_Risk"
+                },
+                {
+                    "PropertyCode": "MitigatedRiskSignificance",
+                    "Code": "MitigatedRiskSignificance_from_Risk",
+                    "PropertySet": "Pset_Risk"
+                },
+                {
+                    "PropertyCode": "MitigationPlanned",
+                    "Code": "MitigationPlanned_from_Risk",
+                    "PropertySet": "Pset_Risk"
+                },
+                {
+                    "PropertyCode": "MitigationProposed",
+                    "Code": "MitigationProposed_from_Risk",
+                    "PropertySet": "Pset_Risk"
+                },
+                {
+                    "PropertyCode": "NatureOfRisk",
+                    "Code": "NatureOfRisk_from_Risk",
+                    "PropertySet": "Pset_Risk"
+                },
+                {
+                    "PropertyCode": "RiskAssessmentMethodology",
+                    "Code": "RiskAssessmentMethodology_from_Risk",
+                    "PropertySet": "Pset_Risk"
+                },
+                {
+                    "PropertyCode": "RiskName",
+                    "Code": "RiskName_from_Risk",
+                    "PropertySet": "Pset_Risk"
+                },
+                {
+                    "PropertyCode": "RiskType",
+                    "Code": "RiskType_from_Risk",
+                    "PropertySet": "Pset_Risk"
+                },
+                {
+                    "PropertyCode": "UnmitigatedRiskConsequence",
+                    "Code": "UnmitigatedRiskConsequence_from_Risk",
+                    "PropertySet": "Pset_Risk"
+                },
+                {
+                    "PropertyCode": "UnmitigatedRiskLikelihood",
+                    "Code": "UnmitigatedRiskLikelihood_from_Risk",
+                    "PropertySet": "Pset_Risk"
+                },
+                {
+                    "PropertyCode": "UnmitigatedRiskSignificance",
+                    "Code": "UnmitigatedRiskSignificance_from_Risk",
+                    "PropertySet": "Pset_Risk"
+                },
+                {
+                    "PropertyCode": "ObjectType",
+                    "Code": "ObjectType_from_Attributes",
+                    "PropertySet": "Attributes"
+                },
+                {
+                    "PropertyCode": "Description",
+                    "Code": "Description_from_Attributes",
+                    "PropertySet": "Attributes"
+                },
+                {
+                    "PropertyCode": "GlobalId",
+                    "Code": "GlobalId_from_Attributes",
+                    "PropertySet": "Attributes"
+                },
+                {
+                    "PropertyCode": "Name",
+                    "Code": "Name_from_Attributes",
+                    "PropertySet": "Attributes"
+                }
+            ],
+            "Uid": "90995dc8-ff72-4331-bff5-af4591a13d27",
+            "ParentClassCode": "IfcDistributionControlElement"
+        }
+    ]
+}

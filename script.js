@@ -542,7 +542,8 @@ class IfcModelMapper {
         }
 
         const sourceCode = this.sourceEditor.getValue();
-        const sourceType = document.getElementById('sourceType').value;
+		const sourceTypeSelect = document.getElementById('sourceType');
+		let sourceType = sourceTypeSelect.value;
         
         if (!sourceCode.trim() || sourceCode.includes('// Вставьте вашу исходную модель здесь')) {
             this.showError('Исходная модель пуста или содержит только пример');
@@ -550,6 +551,20 @@ class IfcModelMapper {
         }
         
         try {
+			// Автоопределение типа при режиме auto/text/пусто
+			if (!sourceType || sourceType === 'auto' || sourceType === 'text') {
+				const detectedType = this.detectTypeFromContent(sourceCode);
+				if (!detectedType || detectedType === 'text') {
+					this.showError('Не удалось определить тип исходной модели. Укажите тип вручную.');
+					return;
+				}
+				sourceType = detectedType;
+				// Синхронизируем UI и язык редактора
+				sourceTypeSelect.value = detectedType;
+				this.setEditorLanguage(detectedType);
+				this.showInfo(`Тип модели определен как: ${detectedType}`);
+			}
+
             const sourceModel = this.parseSourceModel(sourceCode, sourceType);
             this.createAndDisplayMapping(sourceModel);
             this.showSuccess('Соответствия сгенерированы! Настройте маппинг и экспортируйте результат.');
@@ -571,72 +586,92 @@ class IfcModelMapper {
     }
 
     parseOwlTurtle(turtleCode) {
-        const classes = [];
-        const classRegex = /:(\w+)\s+a\s+owl:Class/g;
-        let match;
-        
-        while ((match = classRegex.exec(turtleCode)) !== null) {
-            classes.push({
-                name: match[1],
-                type: 'Class',
-                label: this.extractLabel(turtleCode, match[1])
-            });
-        }
+        // Вспомогательная: извлечь локальное имя из QName/IRI
+        const toLocalName = (token) => {
+            if (!token) return null;
+            let t = token.trim().replace(/[.;]$/, '');
+            const iriMatch = t.match(/^<([^>]+)>$/);
+            if (iriMatch) {
+                const iri = iriMatch[1];
+                const hashIdx = iri.lastIndexOf('#');
+                if (hashIdx >= 0 && hashIdx < iri.length - 1) return iri.substring(hashIdx + 1);
+                const slashIdx = iri.lastIndexOf('/');
+                if (slashIdx >= 0 && slashIdx < iri.length - 1) return iri.substring(slashIdx + 1);
+                return iri;
+            }
+            const qnameMatch = t.match(/^([A-Za-z_][\w-]*:)?([\w-]+)$/);
+            if (qnameMatch) return qnameMatch[2];
+            return null;
+        };
 
+        // Разбиваем на блоки по завершающей точке
+        const blocks = [];
+        let buffer = '';
+        for (const rawLine of turtleCode.split('\n')) {
+            const line = rawLine.trim();
+            if (!line || line.startsWith('#')) continue;
+            buffer += (buffer ? ' ' : '') + line;
+            if (line.endsWith('.')) {
+                blocks.push(buffer);
+                buffer = '';
+            }
+        }
+        if (buffer) blocks.push(buffer);
+
+        const classes = [];
         const properties = [];
         const associations = [];
-        const propRegex = /:(\w+)\s+a\s+owl:(ObjectProperty|DatatypeProperty)/g;
-        
-        while ((match = propRegex.exec(turtleCode)) !== null) {
-            const propertyName = match[1];
-            const propertyType = match[2];
-            const label = this.extractLabel(turtleCode, propertyName);
-            
-            // Извлекаем информацию о домене и диапазоне
-            let domain = null;
-            let range = null;
-            let cardinality = null;
-            
-            // Ищем domain
-            const domainRegex = new RegExp(`:${propertyName}[^.]*rdfs:domain\\s+:([^\\s.;]+)`, 'g');
-            const domainMatch = domainRegex.exec(turtleCode);
-            if (domainMatch) {
-                domain = domainMatch[1];
-            }
-            
-            // Ищем range (только для ObjectProperty)
-            if (propertyType === 'ObjectProperty') {
-                const rangeRegex = new RegExp(`:${propertyName}[^.]*rdfs:range\\s+:([^\\s.;]+)`, 'g');
-                const rangeMatch = rangeRegex.exec(turtleCode);
-                if (rangeMatch) {
-                    range = rangeMatch[1];
+
+        blocks.forEach(block => {
+            // Классы
+            const classDecl = block.match(/^(.+?)\s+(a|rdf:type)\s+owl:Class\b/);
+            if (classDecl) {
+                const subject = toLocalName(classDecl[1]);
+                if (subject) {
+                    classes.push({
+                        name: subject,
+                        type: 'Class',
+                        label: this.extractLabel(turtleCode, subject)
+                    });
                 }
-                
-                // Ищем cardinality ограничения
-                const cardinalityRegex = new RegExp(`:${propertyName}[^.]*owl:cardinality\\s+"([^"]+)"`, 'g');
-                const cardinalityMatch = cardinalityRegex.exec(turtleCode);
-                if (cardinalityMatch) {
-                    cardinality = cardinalityMatch[1];
-                }
-                
-                associations.push({
-                    name: propertyName,
-                    type: 'ObjectProperty',
-                    label: label,
-                    domain: domain,
-                    range: range,
-                    cardinality: cardinality
-                });
-            } else {
-                properties.push({
-                    name: propertyName,
-                    type: 'DatatypeProperty',
-                    label: label,
-                    domain: domain
-                });
             }
-        }
-        
+
+            // Свойства (Object/Datatype)
+            const propDecl = block.match(/^(.+?)\s+(a|rdf:type)\s+owl:(ObjectProperty|DatatypeProperty)\b/);
+            if (propDecl) {
+                const subject = toLocalName(propDecl[1]);
+                const propertyType = propDecl[3];
+                if (subject) {
+                    // Ищем domain / range / cardinality в пределах блока
+                    const domainMatch = block.match(/rdfs:domain\s+([^;\.]+)[;\.]/);
+                    const rangeMatch = block.match(/rdfs:range\s+([^;\.]+)[;\.]/);
+                    const cardinalityMatch = block.match(/owl:cardinality\s+"([^"]+)"/);
+
+                    const domain = domainMatch ? toLocalName(domainMatch[1]) : null;
+                    const range = rangeMatch ? toLocalName(rangeMatch[1]) : null;
+                    const cardinality = cardinalityMatch ? cardinalityMatch[1] : null;
+
+                    if (propertyType === 'ObjectProperty') {
+                        associations.push({
+                            name: subject,
+                            type: 'ObjectProperty',
+                            label: this.extractLabel(turtleCode, subject),
+                            domain: domain,
+                            range: range,
+                            cardinality: cardinality
+                        });
+                    } else {
+                        properties.push({
+                            name: subject,
+                            type: 'DatatypeProperty',
+                            label: this.extractLabel(turtleCode, subject),
+                            domain: domain
+                        });
+                    }
+                }
+            }
+        });
+
         return {
             type: 'owl-turtle',
             classes: classes,
@@ -1287,19 +1322,36 @@ class IfcModelMapper {
     updateMapping(type, index, value) {
         console.log(`Updating ${type} mapping at index ${index} to: ${value}`);
         
-        if (type === 'class') {
-            if (this.currentMapping.classMappings[index]) {
-                this.currentMapping.classMappings[index].target = value;
-            }
-        } else if (type === 'attribute') {
-            if (this.currentMapping.attributeMappings[index]) {
-                this.currentMapping.attributeMappings[index].target = value;
-            }
-        } else if (type === 'association') {
-            if (this.currentMapping.associationMappings && this.currentMapping.associationMappings[index]) {
-                this.currentMapping.associationMappings[index].target = value;
-            }
-        }
+		// Унифицированная функция сброса подтверждения
+		const revokeVerificationIfChanged = (collection, idx, newValue) => {
+			const item = collection && collection[idx];
+			if (!item) return;
+
+			const prevValue = item.target;
+			const changed = prevValue !== newValue;
+			item.target = newValue;
+
+			// Если значение изменилось и было подтверждено — автоматически снимаем подтверждение
+			if (changed && item.verified) {
+				item.verified = false;
+				// Снимаем чекбокс и меняем метку в UI
+				const checkbox = document.querySelector(`.verified-checkbox[data-type="${type}"][data-index="${idx}"]`);
+				if (checkbox) {
+					checkbox.checked = false;
+					const label = checkbox.nextElementSibling;
+					if (label) label.textContent = '✗';
+				}
+				this.showInfo('Значение изменено. Подтвердите соответствие заново.');
+			}
+		};
+
+		if (type === 'class') {
+			revokeVerificationIfChanged(this.currentMapping.classMappings, index, value);
+		} else if (type === 'attribute') {
+			revokeVerificationIfChanged(this.currentMapping.attributeMappings, index, value);
+		} else if (type === 'association') {
+			revokeVerificationIfChanged(this.currentMapping.associationMappings, index, value);
+		}
     }
 
     updateVerificationStatus(type, index, isVerified) {
@@ -1506,7 +1558,14 @@ DATA;
             return;
         }
 
-        const errors = this.findHierarchyErrors();
+		const sourceHierarchy = this.extractSourceHierarchy();
+		if (!sourceHierarchy || Object.keys(sourceHierarchy).length === 0) {
+			// Нет подчиненности в исходной модели — это допустимо, просто нечего проверять
+			this.showInfo('В исходной модели не найдено rdfs:subClassOf. Проверка иерархий пропущена.');
+			return;
+		}
+
+		const errors = this.findHierarchyErrors();
         
         if (errors.length === 0) {
             this.showSuccess('Преобразование корректно');
@@ -1518,7 +1577,18 @@ DATA;
     extractSourceHierarchy() {
         const hierarchy = {};
         const sourceCode = this.sourceEditor.getValue();
-        const sourceType = document.getElementById('sourceType').value;
+		let sourceType = document.getElementById('sourceType').value;
+		
+		// Авто-определение, если пользователь не выбрал корректно
+		if (!sourceType || sourceType === 'auto' || sourceType === 'text') {
+			if (sourceCode.includes('@prefix') || sourceCode.includes('PREFIX')) {
+				sourceType = 'owl';
+			} else if (sourceCode.includes('<?xml') && sourceCode.includes('rdf:RDF')) {
+				sourceType = 'rdf';
+			}
+		}
+
+		console.log('Тип исходной модели для извлечения иерархии:', sourceType);
         
         if (sourceType === 'owl') {
             return this.extractOwlHierarchy(sourceCode);
@@ -1535,7 +1605,7 @@ DATA;
 		const fullHierarchy = [];
 		
 		const collectAncestors = (currentClass, path = []) => {
-			const parents = hierarchies[currentClass] || [];
+			const parents = (hierarchies.parents && hierarchies.parents[currentClass]) ? hierarchies.parents[currentClass] : [];
 			
 			for (const parent of parents) {
 				const newPath = [...path, parent];
@@ -1555,7 +1625,7 @@ DATA;
 		const ancestors = new Set();
 		
 		const collectAncestors = (currentClass) => {
-			const parents = hierarchies[currentClass] || [];
+			const parents = (hierarchies.parents && hierarchies.parents[currentClass]) ? hierarchies.parents[currentClass] : [];
 			
 			for (const parent of parents) {
 				if (!ancestors.has(parent)) {
@@ -1681,6 +1751,9 @@ DATA;
 		classMappings.forEach(mapping => {
 			mappingMap.set(mapping.source, mapping);
 		});
+
+		// Подготовим множество валидных IFC классов для строгой проверки
+		const validIfcClasses = new Set(this.getIfcClasses());
 		
 		// Проверяем все отношения наследования из исходной модели
 		for (const [childClass, parentClasses] of Object.entries(sourceHierarchy)) {
@@ -1700,7 +1773,25 @@ DATA;
 				}
 				
 				console.log(`Проверяем: ${childClass}->${parentClass} как ${childMapping.target}->${parentMapping.target}`);
-				
+
+				// Явная проверка существования целевых IFC классов
+				if (!validIfcClasses.has(childMapping.target) || !validIfcClasses.has(parentMapping.target)) {
+					const missingTargets = [
+						!validIfcClasses.has(childMapping.target) ? childMapping.target : null,
+						!validIfcClasses.has(parentMapping.target) ? parentMapping.target : null
+					].filter(Boolean).join(', ');
+
+					errors.push({
+						childClass,
+						parentClass,
+						childMapping: childMapping.target,
+						parentMapping: parentMapping.target,
+						errorType: 'неизвестный IFC класс',
+						message: `Целевой класс(ы) IFC отсутствуют в схеме: ${missingTargets}`
+					});
+					continue;
+				}
+
 				// Проверяем соответствие иерархии
 				const isValid = this.validateHierarchyMapping(
 					childMapping.target, 
@@ -1710,25 +1801,30 @@ DATA;
 				);
 				
 				if (!isValid) {
-					// Определяем тип ошибки
+					// Проверяем только два случая: обратная иерархия и обобщение дочернего
 					const hierarchies = this.getIfcHierarchies();
-					let errorType = 'нарушение иерархии';
-					
-					// Проверяем является ли это обратной иерархией
-					if (this.isIfcAncestor(childMapping.target, parentMapping.target, hierarchies)) {
+					const childIsAncestorOfParent = this.isIfcAncestor(childMapping.target, parentMapping.target, hierarchies);
+					const parentIsAncestorOfChild = this.isIfcAncestor(parentMapping.target, childMapping.target, hierarchies);
+
+					let errorType = null;
+					if (childIsAncestorOfParent && !parentIsAncestorOfChild) {
+						errorType = 'обобщение дочернего класса';
+					} else if (!childIsAncestorOfParent && parentIsAncestorOfChild) {
 						errorType = 'обратная иерархия';
 					}
-					
-					errors.push({
-						childClass,
-						parentClass,
-						childMapping: childMapping.target,
-						parentMapping: parentMapping.target,
-						errorType: errorType,
-						message: this.getHierarchyErrorMessage(errorType, childClass, parentClass, childMapping.target, parentMapping.target)
-					});
-					
-					console.log(`НАЙДЕНА ОШИБКА: ${errorType}`);
+
+					// Несвязанные ветви и прочие случаи игнорируем
+					if (errorType) {
+						errors.push({
+							childClass,
+							parentClass,
+							childMapping: childMapping.target,
+							parentMapping: parentMapping.target,
+							errorType: errorType,
+							message: this.getHierarchyErrorMessage(errorType, childClass, parentClass, childMapping.target, parentMapping.target)
+						});
+						console.log(`НАЙДЕНА ОШИБКА: ${errorType}`);
+					}
 				}
 			}
 		}
@@ -1737,55 +1833,210 @@ DATA;
 		return errors;
 	}
 
+	// Сообщение об ошибке иерархии
+	getHierarchyErrorMessage(errorType, childClass, parentClass, childIfc, parentIfc) {
+		if (errorType === 'обратная иерархия') {
+			return `Обратная иерархия: OWL ${childClass} → ${parentClass}, но IFC ${childIfc} → ${parentIfc} нарушает порядок (родитель и потомок перепутаны)`;
+		}
+		if (errorType === 'обобщение дочернего класса') {
+			return `Дочерний OWL-класс отмапплен в более общий IFC-класс, чем родительский: OWL ${childClass} → ${parentClass}, IFC ${childIfc} (предок) → ${parentIfc}`;
+		}
+		if (errorType === 'несвязанная иерархия') {
+			return `Несвязанные ветви IFC: для OWL ${childClass} → ${parentClass} выбранные IFC классы (${childIfc} и ${parentIfc}) не состоят в отношении предок/потомок`;
+		}
+		if (errorType === 'неоднозначная иерархия') {
+			return `Неоднозначная иерархия: обнаружено взаимное отношение предок/потомок между IFC ${childIfc} и ${parentIfc}`;
+		}
+		return `Нарушение иерархии: OWL ${childClass} → ${parentClass}, но в IFC класс ${parentIfc} не является предком ${childIfc}`;
+	}
+
+	// Возвращает путь иерархии IFC от класса вверх по первым родителям
+	getIfcClassHierarchyPath(ifcClass) {
+		const hierarchies = this.getIfcHierarchies();
+		const path = [ifcClass];
+		const visited = new Set([ifcClass]);
+		let current = ifcClass;
+
+		while (hierarchies.parents && hierarchies.parents[current] && hierarchies.parents[current].length > 0) {
+			// Берём первого родителя как основной путь
+			const parent = hierarchies.parents[current][0];
+			if (!parent || visited.has(parent)) break;
+			path.push(parent);
+			visited.add(parent);
+			current = parent;
+		}
+		return path;
+	}
+
 	// Улучшенное извлечение иерархии из OWL Turtle
 	extractOwlHierarchy(turtleCode) {
+		// Нормализуем неразрывные пробелы и CRLF
+		turtleCode = turtleCode.replace(/\u00A0/g, ' ').replace(/\r\n/g, '\n');
 		const hierarchy = {};
-		
-		// Упрощенный парсинг - ищем явные rdfs:subClassOf
-		const lines = turtleCode.split('\n');
-		
-		lines.forEach(line => {
-			line = line.trim();
-			
-			// Ищем паттерн: :ChildClass rdfs:subClassOf :ParentClass
-			const subclassMatch = line.match(/^:(\w+)\s+rdfs:subClassOf\s+:(\w+)/);
-			if (subclassMatch) {
-				const childClass = subclassMatch[1];
-				const parentClass = subclassMatch[2];
-				
-				if (!hierarchy[childClass]) {
-					hierarchy[childClass] = [];
-				}
-				if (!hierarchy[childClass].includes(parentClass)) {
-					hierarchy[childClass].push(parentClass);
+
+		// Нормализуем окончания выражений, разбиваем на блоки по точке в конце тройки/блока
+		const blocks = [];
+		let buffer = '';
+		for (const rawLine of turtleCode.split('\n')) {
+			const line = rawLine.trim();
+			if (!line || line.startsWith('#')) continue;
+			buffer += (buffer ? ' ' : '') + line;
+			if (line.endsWith('.')) {
+				blocks.push(buffer);
+				buffer = '';
+			}
+		}
+		if (buffer) blocks.push(buffer);
+		console.log('OWL: количество блоков для парсинга:', blocks.length);
+
+		// Вспомогательная функция: извлечь локальное имя из QName или IRI
+		const toLocalName = (token) => {
+			if (!token) return null;
+			// Удаляем завершающую точку и точку с запятой
+			let t = token.replace(/[.;]$/, '');
+			// Если токен в угловых скобках <...>, извлекаем фрагмент после # или последний сегмент после /
+			const iriMatch = t.match(/^<([^>]+)>$/);
+			if (iriMatch) {
+				const iri = iriMatch[1];
+				const hashIdx = iri.lastIndexOf('#');
+				if (hashIdx >= 0 && hashIdx < iri.length - 1) return iri.substring(hashIdx + 1);
+				const slashIdx = iri.lastIndexOf('/');
+				if (slashIdx >= 0 && slashIdx < iri.length - 1) return iri.substring(slashIdx + 1);
+				return iri; // fallback
+			}
+			// QName: prefix:Local or :Local
+			const qnameMatch = t.match(/^([A-Za-z_][\w-]*:)?([\w-]+)$/);
+			if (qnameMatch) return qnameMatch[2];
+			return null;
+		};
+
+		// Обрабатываем каждый блок; ищем субъект класса и его rdfs:subClassOf
+		blocks.forEach(block => {
+			// 0) Явный кейс: "ex:Child a owl:Class ; rdfs:subClassOf ex:Parent ;"
+			const explicitInline = block.match(/^\s*([A-Za-z_][\w-]*:[\w-]+|:[\w-]+)\s+a\s+owl:Class\s*;\s*rdfs:subClassOf\s+([A-Za-z_][\w-]*:[\w-]+|:[\w-]+)/);
+			if (explicitInline) {
+				const child = toLocalName(explicitInline[1]);
+				const parent = toLocalName(explicitInline[2]);
+				if (child && parent) {
+					if (!hierarchy[child]) hierarchy[child] = [];
+					if (!hierarchy[child].includes(parent)) hierarchy[child].push(parent);
+					console.log('OWL: найдено наследование (explicit inline):', child, '->', parent);
+					return;
 				}
 			}
-			
-			// Ищем паттерн в многострочном формате
-			const multilineMatch = line.match(/^:(\w+)\s+a\s+owl:Class\s*;/);
-			if (multilineMatch) {
-				const currentClass = multilineMatch[1];
-				// Следующие строки могут содержать rdfs:subClassOf
-				const nextLines = lines.slice(lines.indexOf(line) + 1, lines.indexOf(line) + 10);
-				for (const nextLine of nextLines) {
-					if (nextLine.trim().startsWith('rdfs:subClassOf')) {
-						const parentMatch = nextLine.match(/rdfs:subClassOf\s+:(\w+)/);
-						if (parentMatch) {
-							const parentClass = parentMatch[1];
-							if (!hierarchy[currentClass]) {
-								hierarchy[currentClass] = [];
-							}
-							if (!hierarchy[currentClass].includes(parentClass)) {
-								hierarchy[currentClass].push(parentClass);
-							}
-							break;
+
+			// 1) Простая тройка: subj rdfs:subClassOf obj .
+			const tripleMatch = block.match(/^(.+?)\s+rdfs:subClassOf\s+(.+?)\s*\.$/);
+			if (tripleMatch) {
+				const child = toLocalName(tripleMatch[1]);
+				const parent = toLocalName(tripleMatch[2]);
+				if (child && parent) {
+					if (!hierarchy[child]) hierarchy[child] = [];
+					if (!hierarchy[child].includes(parent)) hierarchy[child].push(parent);
+					console.log('OWL: найдено наследование (простая тройка):', child, '->', parent);
+				}
+				return;
+			}
+
+			// 2) Блочная запись: subj a owl:Class ; ... rdfs:subClassOf obj ; ... .
+			// Сначала извлекаем субъект
+			const subjMatch = block.match(/^(.+?)\s+(a|rdf:type)\s+owl:Class\s*;/);
+			if (subjMatch) {
+				const child = toLocalName(subjMatch[1]);
+				if (child) {
+					// Ищем все вхождения rdfs:subClassOf внутри блока
+					const subclassMatches = Array.from(block.matchAll(/rdfs:subClassOf\s+([^;\.]+)[;\.]/g));
+					for (const m of subclassMatches) {
+						const parent = toLocalName(m[1].trim());
+						if (parent) {
+							if (!hierarchy[child]) hierarchy[child] = [];
+							if (!hierarchy[child].includes(parent)) hierarchy[child].push(parent);
+							console.log('OWL: найдено наследование (блочно):', child, '->', parent);
 						}
 					}
-					if (nextLine.trim().endsWith('.')) break; // Конец блока
+				}
+				return;
+			}
+
+			// 3) Иные варианты с QName в обеих частях: prefix:Child rdfs:subClassOf prefix:Parent .
+			const qnameTriple = block.match(/^([A-Za-z_][\w-]*:[\w-]+|:[\w-]+)\s+rdfs:subClassOf\s+([A-Za-z_][\w-]*:[\w-]+|:[\w-]+)\s*\.$/);
+			if (qnameTriple) {
+				const child = toLocalName(qnameTriple[1]);
+				const parent = toLocalName(qnameTriple[2]);
+				if (child && parent) {
+					if (!hierarchy[child]) hierarchy[child] = [];
+					if (!hierarchy[child].includes(parent)) hierarchy[child].push(parent);
+					console.log('OWL: найдено наследование (QName тройка):', child, '->', parent);
 				}
 			}
 		});
-		
+
+		// 4) Дополнительный глобальный проход по всему тексту, чтобы поймать случаи внутри блоков с ;
+		//    Примеры: ex:Reconstruction rdfs:subClassOf ex:Road ; ... .
+		const globalSubclassRegex = /(^|\s)([A-Za-z_][\w-]*:[\w-]+|:[\w-]+)\s+rdfs:subClassOf\s+([A-Za-z_][\w-]*:[\w-]+|:[\w-]+)\s*[;\.]/g;
+		for (const m of turtleCode.matchAll(globalSubclassRegex)) {
+			const child = toLocalName(m[2]);
+			const parent = toLocalName(m[3]);
+			if (child && parent) {
+				if (!hierarchy[child]) hierarchy[child] = [];
+				if (!hierarchy[child].includes(parent)) hierarchy[child].push(parent);
+				console.log('OWL: найдено наследование (глобальный проход):', child, '->', parent);
+			}
+		}
+
+		// 5) Последняя страховка: максимально либеральный поиск, если все ещё пусто, но в тексте есть rdfs:subClassOf
+		if (Object.keys(hierarchy).length === 0 && turtleCode.includes('rdfs:subClassOf')) {
+			const looseRegex = /([^\s;]+)\s+rdfs:subClassOf\s+([^\s;]+)\s*[;\.]/g;
+			let m;
+			while ((m = looseRegex.exec(turtleCode)) !== null) {
+				const child = toLocalName(m[1]);
+				const parent = toLocalName(m[2]);
+				if (child && parent) {
+					if (!hierarchy[child]) hierarchy[child] = [];
+					if (!hierarchy[child].includes(parent)) hierarchy[child].push(parent);
+					console.log('OWL: найдено наследование (loose):', child, '->', parent);
+				}
+			}
+		}
+
+		// 6) Супер-простой проход без требования финального разделителя
+		if (Object.keys(hierarchy).length === 0 && turtleCode.includes('rdfs:subClassOf')) {
+			const bareRegex = /([A-Za-z_][\w-]*:[\w-]+|:[\w-]+)\s+rdfs:subClassOf\s+([A-Za-z_][\w-]*:[\w-]+|:[\w-]+)/g;
+			let m;
+			while ((m = bareRegex.exec(turtleCode)) !== null) {
+				const child = toLocalName(m[1]);
+				const parent = toLocalName(m[2]);
+				if (child && parent) {
+					if (!hierarchy[child]) hierarchy[child] = [];
+					if (!hierarchy[child].includes(parent)) hierarchy[child].push(parent);
+					console.log('OWL: найдено наследование (bare):', child, '->', parent);
+				}
+			}
+		}
+
+		// 7) Специальные предикаты для строго prefixed вида: ex:Child rdfs:subClassOf ex:Parent
+		if (Object.keys(hierarchy).length === 0) {
+			const strictPrefixed = /([A-Za-z_][\w-]*):([\w-]+)\s+rdfs:subClassOf\s+([A-Za-z_][\w-]*):([\w-]+)/g;
+			let m;
+			while ((m = strictPrefixed.exec(turtleCode)) !== null) {
+				const child = m[2];
+				const parent = m[4];
+				if (!hierarchy[child]) hierarchy[child] = [];
+				if (!hierarchy[child].includes(parent)) hierarchy[child].push(parent);
+				console.log('OWL: найдено наследование (strict prefixed):', child, '->', parent);
+			}
+		}
+
+		// Если все ещё пусто, выведем диагностический пример блока, содержащего rdfs:subClassOf
+		if (Object.keys(hierarchy).length === 0) {
+			const sample = blocks.find(b => b.includes('rdfs:subClassOf'));
+			if (sample) {
+				console.log('OWL: диагностический блок с subClassOf (как видит парсер):', sample);
+			} else {
+				console.log('OWL: ни один блок не содержит rdfs:subClassOf');
+			}
+		}
+
 		console.log('Извлеченная иерархия OWL:', hierarchy);
 		return hierarchy;
 	}
@@ -1862,10 +2113,10 @@ DATA;
 		modal.className = 'modal';
 		modal.style.display = 'block';
 		
-		// Группируем ошибки по типам для лучшего отображения
+		// Группируем только два интересующих нас типа
 		const errorTypes = {
-			'обратная иерархия': errors.filter(e => e.errorType === 'обратная иерархия'),
-			'нарушение иерархии': errors.filter(e => e.errorType === 'нарушение иерархии')
+			'обобщение дочернего класса': errors.filter(e => e.errorType === 'обобщение дочернего класса'),
+			'обратная иерархия': errors.filter(e => e.errorType === 'обратная иерархия')
 		};
 		
 		modal.innerHTML = `
@@ -1885,7 +2136,12 @@ DATA;
 						typeErrors.length > 0 ? `
 						<div style="margin-bottom: 25px;">
 							<h4 style="color: var(--error-color); margin-bottom: 10px; border-bottom: 2px solid var(--error-color); padding-bottom: 5px;">
-								${type === 'обратная иерархия' ? '⛔ ОБРАТНЫЕ ИЕРАРХИИ' : '⚠️ НАРУШЕНИЯ ИЕРАРХИЙ'}
+								${
+									type === 'обобщение дочернего класса' ? '⛔ ОБРАТНЫЕ ИЕРАРХИИ' :
+									type === 'обратная иерархия' ? '⛔ ОБРАТНЫЕ ИЕРАРХИИ' :
+									type === 'несвязанная иерархия' ? '⚠️ НЕСВЯЗАННЫЕ ВЕТВИ IFC' :
+									'⚠️ НАРУШЕНИЯ ИЕРАРХИЙ'
+								}
 								<span style="font-size: 14px; color: var(--secondary-color); margin-left: 10px;">
 									(${typeErrors.length} ошибок)
 								</span>
@@ -1913,6 +2169,11 @@ DATA;
 											'⚠️ <strong>Обнаружена обратная иерархия:</strong> Родительский класс OWL отображен в дочерний класс IFC, а дочерний OWL - в родительский IFC' +
 											'</div>' : ''
 										}
+										${type === 'обобщение дочернего класса' ? 
+											'<div style="font-size: 12px; color: var(--warning-color); margin-top: 8px; padding: 8px; background: #fffbeb; border-radius: 4px;">' +
+											'⚠️ <strong>Обнаружена обратная иерархия:</strong> Дочерний OWL отображён в более общий IFC-класс, чем родительский OWL' +
+											'</div>' : ''
+										}
 										<div style="margin-top: 10px; font-size: 12px;">
 											<details>
 												<summary style="cursor: pointer; color: var(--primary-color); font-weight: 600;">
@@ -1936,7 +2197,6 @@ DATA;
 						<h4 style="margin-top: 0; color: var(--primary-color); margin-bottom: 10px;">Рекомендации по исправлению:</h4>
 						<ul style="margin: 10px 0 0 20px; font-size: 14px;">
 							<li style="margin-bottom: 8px;"><strong>Для обратных иерархий:</strong> Убедитесь, что родительские классы OWL отображаются в родительские классы IFC, а дочерние - в дочерние</li>
-							<li style="margin-bottom: 8px;"><strong>Для нарушений иерархий:</strong> Проверьте, что отношения наследования сохраняются после преобразования</li>
 							<li style="margin-bottom: 8px;">Используйте классы из одной ветви IFC иерархии для связанных элементов</li>
 							<li style="margin-bottom: 8px;">Если классы из разных ветвей IFC, рассмотрите возможность изменения маппинга</li>
 							<li>Проверьте иерархию IFC классов в раскрывающихся блоках выше для понимания отношений между классами</li>
