@@ -14,6 +14,9 @@ class IfcModelMapper {
         this.attributesByDomain = new Map();
         this.allIfcPropertiesCache = null;
         this.searchableSelectGlobalHandler = null;
+        this.propertySetStructure = null;
+        this.classPropertySetCache = new Map();
+        this.customPropertySets = this.loadCustomPropertySets();
         
         // Загружаем сохраненные маппинги и пользовательскую схему
         this.savedMappings = this.loadSavedMappings();
@@ -31,6 +34,7 @@ class IfcModelMapper {
         try {
             const response = await fetch('ifc-4.3.json');
             this.ifcSchema = await response.json();
+            this.invalidatePropertySetCache();
             console.log('IFC schema loaded:', this.ifcSchema);
         } catch (error) {
             console.error('Error loading IFC schema:', error);
@@ -40,6 +44,7 @@ class IfcModelMapper {
                 ModelVersion: "2.0",
                 DictionaryVersion: "4.3"
             };
+            this.invalidatePropertySetCache();
         }
     }
 
@@ -51,6 +56,27 @@ class IfcModelMapper {
         } catch (error) {
             console.error('Error loading custom IFC schema:', error);
             return null;
+        }
+    }
+
+    // Загрузка пользовательских PropertySet
+    loadCustomPropertySets() {
+        try {
+            const saved = localStorage.getItem('ifcMapperCustomPropertySets');
+            if (!saved) return {};
+            const parsed = JSON.parse(saved);
+            return parsed && typeof parsed === 'object' ? parsed : {};
+        } catch (error) {
+            console.error('Error loading custom property sets:', error);
+            return {};
+        }
+    }
+
+    saveCustomPropertySets() {
+        try {
+            localStorage.setItem('ifcMapperCustomPropertySets', JSON.stringify(this.customPropertySets || {}));
+        } catch (error) {
+            console.error('Error saving custom property sets:', error);
         }
     }
 
@@ -313,6 +339,11 @@ class IfcModelMapper {
         return Array.from(dataTypes).sort();
     }
 
+    invalidatePropertySetCache() {
+        this.propertySetStructure = null;
+        this.classPropertySetCache = new Map();
+    }
+
 
 	// Улучшенная версия addCustomPropertyToClass
 	addCustomPropertyToClass(ifcClass, propertyName, propertySet = "Pset_Custom") {
@@ -357,9 +388,354 @@ class IfcModelMapper {
 			
 			this.saveCustomIfcSchema();
             this.allIfcPropertiesCache = null;
+            this.invalidatePropertySetCache();
 			this.showSuccess(`Свойство "${propertyName}" добавлено к классу ${ifcClass}`);
 		}
 	}
+
+    getPropertySetStructure() {
+        if (this.propertySetStructure) {
+            return this.propertySetStructure;
+        }
+
+        const schema = this.getMergedIfcSchema();
+        const setToProps = new Map();
+        const propToSets = new Map();
+        const classToSetMap = new Map();
+
+        if (schema?.Classes) {
+            schema.Classes.forEach(cls => {
+                const classMap = new Map();
+                if (cls?.ClassProperties) {
+                    cls.ClassProperties.forEach(prop => {
+                        if (!prop?.PropertyCode) return;
+                        const propertySet = prop.PropertySet || 'Pset_Custom';
+
+                        if (!setToProps.has(propertySet)) {
+                            setToProps.set(propertySet, new Set());
+                        }
+                        setToProps.get(propertySet).add(prop.PropertyCode);
+
+                        if (!propToSets.has(prop.PropertyCode)) {
+                            propToSets.set(prop.PropertyCode, new Set());
+                        }
+                        propToSets.get(prop.PropertyCode).add(propertySet);
+
+                        if (!classMap.has(propertySet)) {
+                            classMap.set(propertySet, new Set());
+                        }
+                        classMap.get(propertySet).add(prop.PropertyCode);
+                    });
+                }
+                classToSetMap.set(cls.Code, classMap);
+            });
+        }
+
+        // Всегда добавляем пользовательский PropertySet
+        if (!setToProps.has('Pset_Custom')) {
+            setToProps.set('Pset_Custom', new Set());
+        }
+
+        this.propertySetStructure = { setToProps, propToSets, classToSetMap };
+        return this.propertySetStructure;
+    }
+
+    getAllPropertySets() {
+        const structure = this.getPropertySetStructure();
+        return Array.from(structure.setToProps.keys()).sort();
+    }
+
+    getPropertiesForPropertySet(propertySet, domainClass = null) {
+        if (!propertySet) return [];
+        const structure = this.getPropertySetStructure();
+
+        if (domainClass) {
+            const classMap = structure.classToSetMap.get(domainClass);
+            if (classMap && classMap.has(propertySet)) {
+                return Array.from(classMap.get(propertySet)).sort();
+            }
+        }
+
+        const props = structure.setToProps.get(propertySet);
+        return props ? Array.from(props).sort() : [];
+    }
+
+    getPropertySetsForClass(ifcClass) {
+        if (!ifcClass) return new Map();
+        if (this.classPropertySetCache.has(ifcClass)) {
+            return this.classPropertySetCache.get(ifcClass);
+        }
+
+        const structure = this.getPropertySetStructure();
+        const classMap = structure.classToSetMap.get(ifcClass) || new Map();
+        this.classPropertySetCache.set(ifcClass, classMap);
+        return classMap;
+    }
+
+    findPropertySetForProperty(propertyCode, ifcClass = null) {
+        if (!propertyCode) return null;
+        const structure = this.getPropertySetStructure();
+
+        if (ifcClass) {
+            const classMap = structure.classToSetMap.get(ifcClass);
+            if (classMap) {
+                for (const [setName, props] of classMap.entries()) {
+                    if (props.has(propertyCode)) {
+                        return setName;
+                    }
+                }
+            }
+        }
+
+        const propSets = structure.propToSets.get(propertyCode);
+        if (propSets && propSets.size > 0) {
+            return Array.from(propSets)[0];
+        }
+
+        return null;
+    }
+
+    getPropertySelectorData(mapping, domainClass, options = {}) {
+        const excludedSets = new Set(options.excludePropertySets || []);
+        if (mapping.propertySet && excludedSets.has(mapping.propertySet)) {
+            mapping.propertySet = null;
+        }
+        const allPropertySets = this.getAllPropertySets();
+        const domainPropertySetNames = domainClass ? Array.from(this.getPropertySetsForClass(domainClass).keys()) : [];
+        const propertySetLabel = mapping.propertySet || '-- Выберите PropertySet --';
+        const propertySetOptions = [];
+        propertySetOptions.push(`<div class="option ${mapping.propertySet ? '' : 'selected'}" data-value="" data-display="-- Выберите PropertySet --">-- Выберите PropertySet --</div>`);
+        const seen = new Set();
+        if (mapping.propertySet) {
+            seen.add(mapping.propertySet);
+        }
+        if (domainClass && domainPropertySetNames.length > 0) {
+            propertySetOptions.push(`<div class="option-group">PropertySet класса ${this.escapeHtml(domainClass)}</div>`);
+            domainPropertySetNames.forEach(setName => {
+                if (excludedSets.has(setName)) return;
+                const escaped = this.escapeHtml(setName);
+                propertySetOptions.push(`<div class="option ${setName === mapping.propertySet ? 'selected' : ''}" data-value="${escaped}">${escaped}</div>`);
+                seen.add(setName);
+            });
+            propertySetOptions.push(`<div class="option-group">Все PropertySet'ы</div>`);
+        }
+        allPropertySets.forEach(setName => {
+            if (excludedSets.has(setName)) return;
+            if (seen.has(setName)) return;
+            const escaped = this.escapeHtml(setName);
+            propertySetOptions.push(`<div class="option ${setName === mapping.propertySet ? 'selected' : ''}" data-value="${escaped}">${escaped}</div>`);
+            seen.add(setName);
+        });
+        if (mapping.propertySet && !seen.has(mapping.propertySet)) {
+            const escaped = this.escapeHtml(mapping.propertySet);
+            propertySetOptions.push(`<div class="option selected" data-value="${escaped}">${escaped}</div>`);
+        }
+        propertySetOptions.push(`<div class="option" data-value="__create_property_set__" data-display="+ Добавить PropertySet">+ Добавить PropertySet</div>`);
+
+        let propertyLabel;
+        let propertyOptions;
+        const availableProperties = mapping.propertySet ? this.getPropertiesForPropertySet(mapping.propertySet, domainClass) : [];
+        const isCustomValue = Boolean(mapping.target && !availableProperties.includes(mapping.target));
+
+        if (!mapping.propertySet) {
+            propertyLabel = 'Сначала выберите PropertySet';
+            propertyOptions = '<div class="option" data-disabled="true" data-display="Сначала выберите PropertySet">Сначала выберите PropertySet</div>';
+        } else {
+            propertyLabel = mapping.target || '-- Выберите свойство --';
+            const propertyOptionList = [
+                `<div class="option ${isCustomValue ? 'selected' : ''}" data-value="custom">-- Другое --</div>`
+            ];
+            if (this.isCustomPropertySet(mapping.propertySet)) {
+                propertyOptionList.push('<div class="option" data-value="__add_property__" data-display="+ Добавить свойство">+ Добавить свойство</div>');
+            }
+            if (availableProperties.length === 0) {
+                propertyOptionList.push('<div class="option" data-disabled="true" data-display="Нет свойств в PropertySet">Нет свойств в PropertySet</div>');
+            } else {
+                availableProperties.forEach(prop => {
+                    const escapedProp = this.escapeHtml(prop);
+                    propertyOptionList.push(`<div class="option ${prop === mapping.target ? 'selected' : ''}" data-value="${escapedProp}">${escapedProp}</div>`);
+                });
+            }
+            if (mapping.target && !availableProperties.includes(mapping.target) && !isCustomValue) {
+                const escapedProp = this.escapeHtml(mapping.target);
+                propertyOptionList.push(`<div class="option selected" data-value="${escapedProp}">${escapedProp}</div>`);
+            }
+            propertyOptions = propertyOptionList.join('');
+        }
+
+        return {
+            propertySetLabel,
+            propertyLabel,
+            propertySetOptions: propertySetOptions.join(''),
+            propertyOptions,
+            isCustomValue
+        };
+    }
+
+    isCustomPropertySet(propertySet) {
+        if (!propertySet) return false;
+        return Boolean(this.customPropertySets && this.customPropertySets[propertySet]);
+    }
+
+    addCustomPropertySet(propertySetName) {
+        const normalized = propertySetName ? propertySetName.trim() : '';
+        if (!normalized) {
+            this.showError('Название PropertySet не может быть пустым');
+            return null;
+        }
+
+        const exists = this.getAllPropertySets().some(name => name.toLowerCase() === normalized.toLowerCase());
+        if (exists) {
+            this.showError(`PropertySet "${normalized}" уже существует`);
+            return null;
+        }
+
+        if (!this.customPropertySets) {
+            this.customPropertySets = {};
+        }
+        this.customPropertySets[normalized] = [];
+        this.saveCustomPropertySets();
+        this.invalidatePropertySetCache();
+        this.showSuccess(`PropertySet "${normalized}" добавлен`);
+        this.renderPropertySetModal();
+        return normalized;
+    }
+
+    addPropertyToCustomSet(propertySetName, propertyName) {
+        if (!this.isCustomPropertySet(propertySetName)) {
+            this.showError('Свойства можно добавлять только в пользовательские PropertySet');
+            return null;
+        }
+
+        const normalizedProperty = propertyName ? propertyName.trim() : '';
+        if (!normalizedProperty) {
+            this.showError('Название свойства не может быть пустым');
+            return null;
+        }
+
+        const existingProps = this.customPropertySets[propertySetName] || [];
+        if (existingProps.some(prop => prop.toLowerCase() === normalizedProperty.toLowerCase())) {
+            this.showError(`Свойство "${normalizedProperty}" уже существует в ${propertySetName}`);
+            return null;
+        }
+
+        existingProps.push(normalizedProperty);
+        this.customPropertySets[propertySetName] = existingProps;
+        this.saveCustomPropertySets();
+        this.invalidatePropertySetCache();
+        this.showSuccess(`Свойство "${normalizedProperty}" добавлено в ${propertySetName}`);
+        this.renderPropertySetModal();
+        return normalizedProperty;
+    }
+
+    removeCustomPropertySet(propertySetName) {
+        if (!this.isCustomPropertySet(propertySetName)) {
+            this.showError('Нельзя удалить встроенный PropertySet');
+            return;
+        }
+        const confirmRemoval = confirm(`Удалить PropertySet "${propertySetName}" и все его свойства?`);
+        if (!confirmRemoval) return;
+
+        delete this.customPropertySets[propertySetName];
+        this.saveCustomPropertySets();
+        this.invalidatePropertySetCache();
+        this.resetMappingsForRemovedPropertySet(propertySetName);
+        this.renderPropertySetModal();
+        this.displayAssociationMapping();
+        this.displayAttributeMapping();
+        this.showSuccess(`PropertySet "${propertySetName}" удален`);
+    }
+
+    removePropertyFromCustomSet(propertySetName, propertyName) {
+        if (!this.isCustomPropertySet(propertySetName)) {
+            this.showError('Нельзя изменять встроенный PropertySet');
+            return;
+        }
+        const props = this.customPropertySets[propertySetName] || [];
+        const index = props.findIndex(prop => prop === propertyName);
+        if (index === -1) {
+            this.showError(`Свойство "${propertyName}" не найдено`);
+            return;
+        }
+        props.splice(index, 1);
+        this.customPropertySets[propertySetName] = props;
+        this.saveCustomPropertySets();
+        this.invalidatePropertySetCache();
+        this.resetMappingsForRemovedProperty(propertySetName, propertyName);
+        this.renderPropertySetModal();
+        this.displayAssociationMapping();
+        this.displayAttributeMapping();
+        this.showSuccess(`Свойство "${propertyName}" удалено из ${propertySetName}`);
+    }
+
+    clearAllCustomPropertySets() {
+        if (!this.customPropertySets || Object.keys(this.customPropertySets).length === 0) {
+            this.showInfo('Пользовательские PropertySet отсутствуют');
+            return;
+        }
+        if (!confirm('Удалить все пользовательские PropertySet?')) {
+            return;
+        }
+        const removedSets = Object.keys(this.customPropertySets);
+        this.customPropertySets = {};
+        this.saveCustomPropertySets();
+        this.invalidatePropertySetCache();
+        removedSets.forEach(setName => this.resetMappingsForRemovedPropertySet(setName));
+        this.renderPropertySetModal();
+        this.displayAssociationMapping();
+        this.displayAttributeMapping();
+        this.showSuccess('Все пользовательские PropertySet удалены');
+    }
+
+    promptCreatePropertySet() {
+        const name = prompt('Введите название нового PropertySet:');
+        if (!name) return null;
+        const created = this.addCustomPropertySet(name);
+        if (created) {
+            this.displayAssociationMapping();
+            this.displayAttributeMapping();
+        }
+        return created;
+    }
+
+    promptAddPropertyToCustomSet(propertySetName) {
+        const propertyName = prompt(`Введите название свойства для ${propertySetName}:`);
+        if (!propertyName) return null;
+        const created = this.addPropertyToCustomSet(propertySetName, propertyName);
+        if (created) {
+            this.displayAssociationMapping();
+            this.displayAttributeMapping();
+        }
+        return created;
+    }
+
+    resetMappingsForRemovedPropertySet(propertySetName) {
+        const resetMapping = (mapping) => {
+            if (mapping && mapping.propertySet === propertySetName) {
+                mapping.propertySet = null;
+                mapping.target = null;
+                if (mapping.verified) {
+                    mapping.verified = false;
+                }
+            }
+        };
+        (this.currentMapping?.attributeMappings || []).forEach(resetMapping);
+        (this.currentMapping?.associationMappings || []).forEach(resetMapping);
+    }
+
+    resetMappingsForRemovedProperty(propertySetName, propertyName) {
+        const resetMapping = (mapping) => {
+            if (mapping && mapping.propertySet === propertySetName && mapping.target === propertyName) {
+                mapping.target = null;
+                if (mapping.verified) {
+                    mapping.verified = false;
+                }
+            }
+        };
+        (this.currentMapping?.attributeMappings || []).forEach(resetMapping);
+        (this.currentMapping?.associationMappings || []).forEach(resetMapping);
+    }
+
 
     // Генерация UID для новых элементов
     generateUid() {
@@ -440,8 +816,9 @@ class IfcModelMapper {
     }
 
     // Добавление подтвержденного маппинга в сохраненные
-    addVerifiedMapping(type, source, target, predefinedType = null) {
+    addVerifiedMapping(type, source, target, options = {}) {
         if (type === 'class') {
+            const predefinedType = options.predefinedType || null;
             this.savedMappings.classMappings[source] = {
                 target: target,
                 predefinedType: predefinedType,
@@ -449,14 +826,18 @@ class IfcModelMapper {
                 usageCount: (this.savedMappings.classMappings[source]?.usageCount || 0) + 1
             };
         } else if (type === 'attribute') {
+            const propertySet = options.propertySet || null;
             this.savedMappings.attributeMappings[source] = {
                 target: target,
+                propertySet: propertySet,
                 lastUsed: new Date().toISOString(),
                 usageCount: (this.savedMappings.attributeMappings[source]?.usageCount || 0) + 1
             };
         } else if (type === 'association') {
+            const propertySet = options.propertySet || null;
             this.savedMappings.associationMappings[source] = {
                 target: target,
+                propertySet: propertySet,
                 lastUsed: new Date().toISOString(),
                 usageCount: (this.savedMappings.associationMappings[source]?.usageCount || 0) + 1
             };
@@ -625,6 +1006,46 @@ class IfcModelMapper {
         document.getElementById('cancelSettingsBtn').addEventListener('click', () => this.hideAdvancedSettings());
         
         document.getElementById('validateMappingBtn').addEventListener('click', () => this.validateMapping());
+
+        const managePropertySetsBtn = document.getElementById('managePropertySetsBtn');
+        if (managePropertySetsBtn) {
+            managePropertySetsBtn.addEventListener('click', () => this.showPropertySetModal());
+        }
+        const addPropertySetBtn = document.getElementById('addPropertySetBtn');
+        if (addPropertySetBtn) {
+            addPropertySetBtn.addEventListener('click', () => this.promptCreatePropertySet());
+        }
+        const clearPropertySetsBtn = document.getElementById('clearAllPropertySetsBtn');
+        if (clearPropertySetsBtn) {
+            clearPropertySetsBtn.addEventListener('click', () => this.clearAllCustomPropertySets());
+        }
+        const closePropertySetModalBtn = document.getElementById('closePropertySetModalBtn');
+        if (closePropertySetModalBtn) {
+            closePropertySetModalBtn.addEventListener('click', () => this.hidePropertySetModal());
+        }
+        const propertySetModalCloseFooter = document.getElementById('propertySetModalCloseFooter');
+        if (propertySetModalCloseFooter) {
+            propertySetModalCloseFooter.addEventListener('click', () => this.hidePropertySetModal());
+        }
+        const propertySetList = document.getElementById('customPropertySetList');
+        if (propertySetList) {
+            propertySetList.addEventListener('click', (e) => {
+                const action = e.target.getAttribute('data-action');
+                if (!action) return;
+                const setName = e.target.getAttribute('data-set');
+                if (!setName) return;
+                if (action === 'add-property') {
+                    this.promptAddPropertyToCustomSet(setName);
+                } else if (action === 'remove-set') {
+                    this.removeCustomPropertySet(setName);
+                } else if (action === 'remove-property') {
+                    const property = e.target.getAttribute('data-property');
+                    if (property) {
+                        this.removePropertyFromCustomSet(setName, property);
+                    }
+                }
+            });
+        }
 
         // Добавляем кнопку управления сохраненными маппингами
         this.addMappingManagementButton();
@@ -965,78 +1386,88 @@ class IfcModelMapper {
         };
 
         const classes = [];
-        const properties = [];
+        const datatypeProperties = [];
+        const objectProperties = [];
         const lines = turtleCode.split('\n');
         
-        // Разбиваем на блоки по завершающей точке (как в parseOwlTurtle)
         const blocks = [];
         let buffer = '';
         let blockStartLine = 0;
-        for (let i = 0; i < lines.length; i++) {
-            const line = lines[i].trim();
-            if (!line || line.startsWith('#')) continue;
-            if (buffer === '') blockStartLine = i;
+        lines.forEach((rawLine, index) => {
+            const line = rawLine.trim();
+            if (!line || line.startsWith('#')) return;
+            if (!buffer) blockStartLine = index;
             buffer += (buffer ? ' ' : '') + line;
             if (line.endsWith('.')) {
                 blocks.push({ text: buffer, startLine: blockStartLine });
                 buffer = '';
             }
+        });
+        if (buffer) {
+            blocks.push({ text: buffer, startLine: blockStartLine });
         }
-        if (buffer) blocks.push({ text: buffer, startLine: blockStartLine });
+
+        const findDefinitionPosition = (subject, startLine, keyword) => {
+            for (let i = startLine; i < lines.length && i < startLine + 40; i++) {
+                const raw = lines[i];
+                if (!raw) continue;
+                const trimmed = raw.trim();
+                if (!trimmed || trimmed.startsWith('#')) continue;
+                if (raw.includes(subject) && (!keyword || raw.includes(keyword))) {
+                    return {
+                        lineNumber: i + 1,
+                        column: Math.max(raw.indexOf(subject) + 1, 1)
+                    };
+                }
+            }
+            return {
+                lineNumber: startLine + 1,
+                column: 1
+            };
+        };
         
-        // Находим классы в блоках
         blocks.forEach(block => {
             const classDecl = block.text.match(/^(.+?)\s+(a|rdf:type)\s+owl:Class\b/);
             if (classDecl) {
                 const subject = toLocalName(classDecl[1]);
                 if (subject && !classes.find(c => c.name === subject)) {
-                    // Находим строку, где начинается определение
-                    const blockLines = turtleCode.split('\n');
-                    let foundLine = block.startLine;
-                    for (let i = block.startLine; i < blockLines.length && i < block.startLine + 10; i++) {
-                        if (blockLines[i].includes(subject) && (blockLines[i].includes('owl:Class') || blockLines[i].includes('a owl:Class'))) {
-                            foundLine = i;
-                            break;
-                        }
-                    }
+                    const position = findDefinitionPosition(subject, block.startLine, 'owl:Class');
                     classes.push({
                         name: subject,
                         label: this.extractLabel(turtleCode, subject),
-                        lineNumber: foundLine + 1,
-                        column: 1
+                        lineNumber: position.lineNumber,
+                        column: position.column
                     });
                 }
             }
-        });
 
-        // Находим свойства в блоках
-        blocks.forEach(block => {
             const propDecl = block.text.match(/^(.+?)\s+(a|rdf:type)\s+owl:(ObjectProperty|DatatypeProperty)\b/);
             if (propDecl) {
                 const subject = toLocalName(propDecl[1]);
                 const propertyType = propDecl[3];
-                if (subject && !properties.find(p => p.name === subject)) {
-                    // Находим строку, где начинается определение
-                    const blockLines = turtleCode.split('\n');
-                    let foundLine = block.startLine;
-                    for (let i = block.startLine; i < blockLines.length && i < block.startLine + 10; i++) {
-                        if (blockLines[i].includes(subject) && blockLines[i].includes(propertyType)) {
-                            foundLine = i;
-                            break;
-                        }
-                    }
-                    properties.push({
+                if (subject) {
+                    const position = findDefinitionPosition(subject, block.startLine, `owl:${propertyType}`);
+                    const entry = {
                         name: subject,
                         type: propertyType,
                         label: this.extractLabel(turtleCode, subject),
-                        lineNumber: foundLine + 1,
-                        column: 1
-                    });
+                        lineNumber: position.lineNumber,
+                        column: position.column
+                    };
+                    if (propertyType === 'ObjectProperty') {
+                        if (!objectProperties.find(p => p.name === subject)) {
+                            objectProperties.push(entry);
+                        }
+                    } else if (propertyType === 'DatatypeProperty') {
+                        if (!datatypeProperties.find(p => p.name === subject)) {
+                            datatypeProperties.push(entry);
+                        }
+                    }
                 }
             }
         });
 
-        return { classes, properties };
+        return { classes, datatypeProperties, objectProperties };
     }
 
     // Обновление списков классов и свойств
@@ -1052,71 +1483,69 @@ class IfcModelMapper {
         try {
             const parsed = this.parseOwlWithPositions(sourceCode);
             this.displayOwlClasses(parsed.classes);
-            this.displayOwlProperties(parsed.properties);
+            this.displayOwlDatatypeProperties(parsed.datatypeProperties);
+            this.displayOwlObjectProperties(parsed.objectProperties);
         } catch (error) {
             console.error('Ошибка парсинга OWL:', error);
             this.clearOwlLists();
         }
     }
 
-    // Отображение списка классов
-    displayOwlClasses(classes) {
-        const container = document.getElementById('owlClassesList');
+    renderOwlList(containerId, items, options) {
+        const container = document.getElementById(containerId);
         if (!container) return;
+        const { emptyText } = options;
 
-        if (classes.length === 0) {
-            container.innerHTML = '<div class="no-items">Классы не найдены</div>';
+        if (!items || items.length === 0) {
+            container.innerHTML = `<div class="no-items">${emptyText}</div>`;
             return;
         }
 
         container.innerHTML = '';
-        classes.forEach(cls => {
-            const item = document.createElement('div');
-            item.className = 'owl-list-item';
-            item.innerHTML = `
-                <div class="owl-list-item-name">${this.escapeHtml(cls.name)}</div>
-                ${cls.label && cls.label !== cls.name ? `<div class="owl-list-item-label">${this.escapeHtml(cls.label)}</div>` : ''}
-                <div class="owl-list-item-type">Class</div>
+        items.forEach(item => {
+            const element = document.createElement('div');
+            element.className = 'owl-list-item';
+            element.innerHTML = `
+                <div class="owl-list-item-name">${this.escapeHtml(item.name)}</div>
+                ${item.label && item.label !== item.name ? `<div class="owl-list-item-label">${this.escapeHtml(item.label)}</div>` : ''}
             `;
-            item.addEventListener('dblclick', () => this.navigateToDefinition(cls, cls.name));
-            container.appendChild(item);
+            element.addEventListener('dblclick', () => this.navigateToDefinition(item, item.name));
+            container.appendChild(element);
         });
     }
 
-    // Отображение списка свойств
-    displayOwlProperties(properties) {
-        const container = document.getElementById('owlPropertiesList');
-        if (!container) return;
+    displayOwlClasses(classes) {
+        this.renderOwlList('owlClassesList', classes, {
+            emptyText: 'Классы не найдены'
+        });
+    }
 
-        if (properties.length === 0) {
-            container.innerHTML = '<div class="no-items">Свойства не найдены</div>';
-            return;
-        }
+    displayOwlDatatypeProperties(properties) {
+        this.renderOwlList('owlDatatypeList', properties, {
+            emptyText: 'DatatypeProperty не найдены'
+        });
+    }
 
-        container.innerHTML = '';
-        properties.forEach(prop => {
-            const item = document.createElement('div');
-            item.className = 'owl-list-item';
-            item.innerHTML = `
-                <div class="owl-list-item-name">${this.escapeHtml(prop.name)}</div>
-                ${prop.label && prop.label !== prop.name ? `<div class="owl-list-item-label">${this.escapeHtml(prop.label)}</div>` : ''}
-                <div class="owl-list-item-type">${prop.type}</div>
-            `;
-            item.addEventListener('dblclick', () => this.navigateToDefinition(prop, prop.name));
-            container.appendChild(item);
+    displayOwlObjectProperties(properties) {
+        this.renderOwlList('owlObjectList', properties, {
+            emptyText: 'ObjectProperty не найдены'
         });
     }
 
     // Очистка списков
     clearOwlLists() {
         const classesContainer = document.getElementById('owlClassesList');
-        const propertiesContainer = document.getElementById('owlPropertiesList');
+        const datatypeContainer = document.getElementById('owlDatatypeList');
+        const objectContainer = document.getElementById('owlObjectList');
         
         if (classesContainer) {
             classesContainer.innerHTML = '<div class="no-items">Загрузите OWL файл для просмотра классов</div>';
         }
-        if (propertiesContainer) {
-            propertiesContainer.innerHTML = '<div class="no-items">Загрузите OWL файл для просмотра свойств</div>';
+        if (datatypeContainer) {
+            datatypeContainer.innerHTML = '<div class="no-items">Загрузите OWL файл для просмотра DatatypeProperty</div>';
+        }
+        if (objectContainer) {
+            objectContainer.innerHTML = '<div class="no-items">Загрузите OWL файл для просмотра ObjectProperty</div>';
         }
     }
 
@@ -1328,23 +1757,33 @@ class IfcModelMapper {
         if (sourceModel.properties && sourceModel.properties.length > 0) {
             sourceModel.properties.forEach((prop, index) => {
                 const savedMapping = this.getSavedMapping('attribute', prop.name);
-                let defaultMapping;
+                let targetProperty = null;
+                let propertySet = null;
                 let verified = false;
 
                 if (savedMapping) {
-                    defaultMapping = savedMapping.target;
+                    targetProperty = savedMapping.target || null;
+                    propertySet = savedMapping.propertySet || null;
                     verified = true;
                 } else {
-                    defaultMapping = this.getDefaultAttributeMapping(prop.name);
+                    const defaults = this.getDefaultAttributeMapping(prop.name, prop.domain);
+                    targetProperty = defaults.property || null;
+                    propertySet = defaults.propertySet || null;
+                }
+
+                if (!propertySet && targetProperty) {
+                    const domainClass = prop.domain ? this.getMappedIfcClass(prop.domain) : null;
+                    propertySet = this.findPropertySetForProperty(targetProperty, domainClass);
                 }
 
                 const attributeEntry = {
                     source: prop.name,
-                    target: defaultMapping,
+                    target: targetProperty,
                     label: prop.label,
                     type: 'attribute',
                     domain: prop.domain,
                     range: prop.range,
+                    propertySet: propertySet || null,
                     verified: verified
                 };
 
@@ -1396,19 +1835,24 @@ class IfcModelMapper {
         if (sourceModel.associations && sourceModel.associations.length > 0) {
             sourceModel.associations.forEach(assoc => {
                 const savedMapping = this.getSavedMapping('association', assoc.name);
-                let defaultMapping;
+                let defaultAssociation = { property: null, propertySet: null };
                 let verified = false;
 
                 if (savedMapping) {
-                    defaultMapping = savedMapping.target;
+                    defaultAssociation.property = savedMapping.target || null;
+                    defaultAssociation.propertySet = savedMapping.propertySet || null;
+                    if (defaultAssociation.propertySet === 'Attributes') {
+                        defaultAssociation.propertySet = null;
+                    }
                     verified = true;
                 } else {
-                    defaultMapping = this.getDefaultAssociationMapping(assoc.name, assoc.domain, assoc.range);
+                    defaultAssociation = this.getDefaultAssociationMapping(assoc.name, assoc.domain, assoc.range) || defaultAssociation;
                 }
 
                 this.currentMapping.associationMappings.push({
                     source: assoc.name,
-                    target: defaultMapping,
+                    target: defaultAssociation.property || null,
+                    propertySet: defaultAssociation.propertySet || null,
                     label: assoc.label,
                     type: 'association',
                     domain: assoc.domain,
@@ -1480,7 +1924,14 @@ class IfcModelMapper {
         return parsed.baseClass || mapping;
     }
 
-    getDefaultAttributeMapping(attributeName) {
+    getMappedIfcClass(sourceClassName) {
+        if (!sourceClassName || !this.currentMapping || !this.currentMapping.classMappings) {
+            return null;
+        }
+        return this.currentMapping.classMappings.find(m => m.source === sourceClassName)?.target || null;
+    }
+
+    getDefaultAttributeMapping(attributeName, domainSourceClass = null) {
         const defaultMappings = {
             'hasHeight': 'OverallHeight',
             'hasMaterial': 'Material',
@@ -1504,7 +1955,19 @@ class IfcModelMapper {
             'hasStatus': 'Status',
             'hasCondition': 'Condition'
         };
-        return defaultMappings[attributeName] || attributeName.toUpperCase();
+        const property = defaultMappings[attributeName] || attributeName.toUpperCase();
+        let propertySet = null;
+        const domainClass = domainSourceClass ? this.getMappedIfcClass(domainSourceClass) : null;
+        if (domainClass) {
+            propertySet = this.findPropertySetForProperty(property, domainClass);
+        }
+        if (!propertySet) {
+            propertySet = this.findPropertySetForProperty(property, null);
+        }
+        return {
+            property,
+            propertySet
+        };
     }
 
     getInitialAttributeClassSelection() {
@@ -1698,8 +2161,6 @@ class IfcModelMapper {
             return;
         }
 
-        const allProperties = this.getAllIfcProperties();
-
 		domainAttributes.forEach(({ mapping, index }) => {
 			const item = document.createElement('div');
 			item.className = 'mapping-item';
@@ -1707,31 +2168,51 @@ class IfcModelMapper {
 			const displayName = mapping.label || this.generateReadableName(mapping.source);
 			const savedMapping = this.getSavedMapping('attribute', mapping.source);
 			const usageInfo = savedMapping ? ` (использовано ${savedMapping.usageCount} раз)` : '';
-			
-			const isValidTarget = mapping.target && allProperties.includes(mapping.target);
-            const selectedValue = isValidTarget ? mapping.target : '-- Выберите атрибут --';
+
+            const domainClassTarget = this.getMappedIfcClass(mapping.domain) || (currentClass ? currentClass.target : null);
+            const selectorData = this.getPropertySelectorData(mapping, domainClassTarget);
+            const propertySetLabel = selectorData.propertySetLabel;
+            const propertyLabel = selectorData.propertyLabel;
+            const isCustomValue = selectorData.isCustomValue;
 			
 			item.innerHTML = `
 				<div class="source-item">
 					<div class="element-name">${displayName}</div>
 					<div class="element-technical">${mapping.source}${usageInfo}</div>
 				</div>
-				<div class="target-item">
-					<div class="searchable-select" data-index="${index}" data-type="attribute">
-						<div class="selected-value">${selectedValue}</div>
-						<div class="dropdown">
-							<input type="text" class="search-input" placeholder="Поиск IFC атрибута...">
-							<div class="options-list">
-								${allProperties.map(attr => 
-									`<div class="option ${attr === mapping.target ? 'selected' : ''}" data-value="${attr}">${attr}</div>`
-								).join('')}
-							</div>
-						</div>
-					</div>
-					<input type="text" class="mapping-input" 
-						   style="display: none;"
-						   value="" 
-						   placeholder="Введите IFC атрибут">
+				<div class="target-item association-target-item">
+                    <div class="association-target-controls">
+                        <div class="property-selectors-row">
+                            <div class="property-selector-group">
+                                <div class="property-selector-label">PropertySet</div>
+                                <div class="searchable-select" data-index="${index}" data-type="attribute-propertyset">
+                                    <div class="selected-value">${this.escapeHtml(propertySetLabel)}</div>
+                                    <div class="dropdown">
+                                        <input type="text" class="search-input" placeholder="Поиск PropertySet...">
+                                        <div class="options-list">
+                                            ${selectorData.propertySetOptions}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="property-selector-group">
+                                <div class="property-selector-label">IFC Свойство</div>
+                                <div class="searchable-select" data-index="${index}" data-type="attribute">
+                                    <div class="selected-value">${this.escapeHtml(propertyLabel)}</div>
+                                    <div class="dropdown">
+                                        <input type="text" class="search-input" placeholder="Поиск свойства...">
+                                        <div class="options-list">
+                                            ${selectorData.propertyOptions}
+                                        </div>
+                                    </div>
+                                </div>
+                                <input type="text" class="mapping-input" 
+                                       style="display: ${isCustomValue ? 'block' : 'none'};"
+                                       value="${isCustomValue ? this.escapeHtml(mapping.target || '') : ''}" 
+                                       placeholder="Введите IFC атрибут">
+                            </div>
+                        </div>
+                    </div>
 				</div>
 				<div class="verified-item">
 					<input type="checkbox" class="verified-checkbox" data-index="${index}" data-type="attribute" 
@@ -1812,19 +2293,25 @@ class IfcModelMapper {
 		this.currentMapping.associationMappings.forEach((mapping, index) => {
 			const item = document.createElement('div');
 			item.className = 'mapping-item';
+            item.setAttribute('data-association-index', index);
 			
 			const displayName = mapping.label || this.generateReadableName(mapping.source);
 			const savedMapping = this.getSavedMapping('association', mapping.source);
 			const usageInfo = savedMapping ? ` (использовано ${savedMapping.usageCount} раз)` : '';
 			
-			// Получаем соответствующий IFC класс для домена
-			const domainClass = mapping.domain ? 
-				this.currentMapping.classMappings.find(m => m.source === mapping.domain)?.target : null;
-			
-			const domainProperties = domainClass ? this.getIfcClassProperties(domainClass) : [];
-			const allProperties = this.getAllIfcProperties();
-			
-			const isCustomValue = !allProperties.includes(mapping.target);
+			const domainClass = this.getMappedIfcClass(mapping.domain);
+
+            if (!mapping.propertySet && mapping.target) {
+                const guessedSet = this.findPropertySetForProperty(mapping.target, domainClass);
+                if (guessedSet) {
+                    mapping.propertySet = guessedSet;
+                }
+            }
+
+            const selectorData = this.getPropertySelectorData(mapping, domainClass, { excludePropertySets: ['Attributes'] });
+            const propertySetLabel = selectorData.propertySetLabel;
+            const propertyLabel = selectorData.propertyLabel;
+            const isCustomValue = selectorData.isCustomValue;
 			
 			item.innerHTML = `
 				<div class="source-item">
@@ -1835,32 +2322,42 @@ class IfcModelMapper {
 						${mapping.range ? '→ ' + mapping.range : ''}
 						${mapping.cardinality ? ` (${mapping.cardinality})` : ''}
 						${domainClass ? ` [IFC: ${domainClass}]` : ''}
+                        ${mapping.propertySet ? ` | PropertySet: ${mapping.propertySet}` : ''}
 					</div>
 				</div>
-				<div class="target-item">
-					<div class="searchable-select" data-index="${index}" data-type="association">
-						<div class="selected-value">${mapping.target || '-- Выберите свойство --'}</div>
-						<div class="dropdown">
-							<input type="text" class="search-input" placeholder="Поиск IFC свойства...">
-							<div class="options-list">
-								<div class="option ${isCustomValue ? 'selected' : ''}" data-value="custom">-- Другое --</div>
-								${domainClass ? `
-									<div class="option-group">Свойства класса ${domainClass}</div>
-									${domainProperties.map(prop => 
-										`<div class="option ${prop === mapping.target ? 'selected' : ''}" data-value="${prop}">${prop}</div>`
-									).join('')}
-									<div class="option-group">Все свойства IFC</div>
-								` : ''}
-								${allProperties.map(prop => 
-									`<div class="option ${prop === mapping.target ? 'selected' : ''}" data-value="${prop}">${prop}</div>`
-								).join('')}
-							</div>
-						</div>
-					</div>
-					<input type="text" class="mapping-input" 
-						   style="display: ${isCustomValue ? 'block' : 'none'};"
-						   value="${isCustomValue ? mapping.target : ''}" 
-						   placeholder="Введите IFC свойство">
+				<div class="target-item association-target-item">
+                    <div class="association-target-controls">
+                        <div class="property-selectors-row">
+                            <div class="property-selector-group">
+                                <div class="property-selector-label">PropertySet</div>
+                                <div class="searchable-select" data-index="${index}" data-type="association-propertyset">
+                                    <div class="selected-value">${this.escapeHtml(propertySetLabel)}</div>
+                                    <div class="dropdown">
+                                        <input type="text" class="search-input" placeholder="Поиск PropertySet...">
+                                        <div class="options-list">
+                                            ${selectorData.propertySetOptions}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="property-selector-group">
+                                <div class="property-selector-label">IFC Свойство</div>
+                                <div class="searchable-select" data-index="${index}" data-type="association">
+                                    <div class="selected-value">${this.escapeHtml(propertyLabel)}</div>
+                                    <div class="dropdown">
+                                        <input type="text" class="search-input" placeholder="Поиск свойства...">
+                                        <div class="options-list">
+                                            ${selectorData.propertyOptions}
+                                        </div>
+                                    </div>
+                                </div>
+                                <input type="text" class="mapping-input" 
+                                       style="display: ${isCustomValue ? 'block' : 'none'};"
+                                       value="${isCustomValue ? this.escapeHtml(mapping.target) : ''}" 
+                                       placeholder="Введите IFC свойство">
+                            </div>
+                        </div>
+                    </div>
 				</div>
 				<div class="verified-item">
 					<input type="checkbox" class="verified-checkbox" data-index="${index}" data-type="association" 
@@ -1876,26 +2373,39 @@ class IfcModelMapper {
 	}
 
     getDefaultAssociationMapping(associationName, domain, range) {
-        // Для ObjectProperty предлагаем свойства соответствующего класса
+        let property = null;
+        let propertySet = null;
+
         if (domain) {
             const domainClass = this.currentMapping.classMappings.find(m => m.source === domain)?.target;
             if (domainClass) {
                 const classProperties = this.getIfcClassProperties(domainClass);
                 if (classProperties.length > 0) {
-                    // Пытаемся найти подходящее свойство по имени
                     const lowerName = associationName.toLowerCase();
                     for (const prop of classProperties) {
                         if (prop.toLowerCase().includes(lowerName) || lowerName.includes(prop.toLowerCase())) {
-                            return prop;
+                            property = prop;
+                            break;
                         }
                     }
-                    // Возвращаем первое свойство по умолчанию
-                    return classProperties[0];
+                    if (!property) {
+                        property = classProperties[0];
+                    }
+                    propertySet = this.findPropertySetForProperty(property, domainClass);
+                    if (propertySet === 'Attributes') {
+                        propertySet = null;
+                    }
+                    return { property, propertySet };
                 }
             }
         }
-        
-        return this.getAllIfcProperties()[0] || 'Name';
+
+        property = this.getAllIfcProperties()[0] || 'Name';
+        propertySet = this.findPropertySetForProperty(property, null);
+        if (propertySet === 'Attributes') {
+            propertySet = null;
+        }
+        return { property, propertySet };
     }
 
     // Новый метод для привязки событий к улучшенным селектам
@@ -1967,8 +2477,25 @@ class IfcModelMapper {
                     if (option.dataset.disabled === 'true') {
                         return;
                     }
-                    e.stopPropagation();
                     const value = option.getAttribute('data-value');
+                    const index = parseInt(select.getAttribute('data-index'));
+                    const type = select.getAttribute('data-type');
+
+                    if (value === '__create_property_set__') {
+                        e.stopPropagation();
+                        this.handleCreatePropertySetSelection(type, index);
+                        select.classList.remove('open');
+                        return;
+                    }
+
+                    if (value === '__add_property__') {
+                        e.stopPropagation();
+                        this.handleAddPropertyOptionSelection(type, index);
+                        select.classList.remove('open');
+                        return;
+                    }
+
+                    e.stopPropagation();
                     
                     select.querySelectorAll('.option').forEach(opt => {
                         opt.classList.remove('selected');
@@ -1976,14 +2503,31 @@ class IfcModelMapper {
                     option.classList.add('selected');
                     
                     if (selectedValue) {
-                        selectedValue.textContent = value === 'custom' ? '-- Другое --' : value;
+                        const customDisplay = option.getAttribute('data-display');
+                        if (value === 'custom') {
+                            selectedValue.textContent = '-- Другое --';
+                        } else if (customDisplay) {
+                            selectedValue.textContent = customDisplay;
+                        } else if (value) {
+                            selectedValue.textContent = value;
+                        } else {
+                            selectedValue.textContent = '-- Не выбрано --';
+                        }
                     }
                     
                     select.classList.remove('open');
                     
-                    const index = parseInt(select.getAttribute('data-index'));
-                    const type = select.getAttribute('data-type');
                     const input = select.parentNode ? select.parentNode.querySelector('.mapping-input') : null;
+
+                    if (type === 'association-propertyset') {
+                        this.updateMappingPropertySet(type, index, value);
+                        return;
+                    }
+
+                    if (type === 'attribute-propertyset') {
+                        this.updateMappingPropertySet(type, index, value);
+                        return;
+                    }
                     
                     if (value === 'custom') {
                         if (input) {
@@ -2010,7 +2554,8 @@ class IfcModelMapper {
                                 if (domainClass) {
                                     const classProperties = this.getIfcClassProperties(domainClass);
                                     if (!classProperties.includes(value)) {
-                                        this.addCustomPropertyToClass(domainClass, value);
+                                        const propertySet = mapping.propertySet || 'Pset_Custom';
+                                        this.addCustomPropertyToClass(domainClass, value, propertySet);
                                     }
                                 }
                             }
@@ -2065,6 +2610,103 @@ class IfcModelMapper {
             if (e.target.style.display !== 'none') {
                 this.updateMapping(type, index, e.target.value);
             }
+        }
+    }
+
+    getMappingEntry(type, index) {
+        if (!this.currentMapping) return null;
+        if (type === 'association' || type === 'association-propertyset') {
+            return this.currentMapping.associationMappings?.[index] || null;
+        }
+        if (type === 'attribute' || type === 'attribute-propertyset') {
+            return this.currentMapping.attributeMappings?.[index] || null;
+        }
+        if (type === 'class') {
+            return this.currentMapping.classMappings?.[index] || null;
+        }
+        if (type === 'type') {
+            return this.currentMapping.typeMappings?.[index] || null;
+        }
+        return null;
+    }
+
+    handleCreatePropertySetSelection(selectType, index) {
+        const newSet = this.promptCreatePropertySet();
+        if (newSet) {
+            this.updateMappingPropertySet(selectType, index, newSet);
+        } else {
+            if (selectType.startsWith('association')) {
+                this.displayAssociationMapping();
+            } else if (selectType.startsWith('attribute')) {
+                this.displayAttributeMapping();
+            }
+        }
+    }
+
+    handleAddPropertyOptionSelection(type, index) {
+        const mapping = this.getMappingEntry(type, index);
+        if (!mapping) return;
+        if (!mapping.propertySet) {
+            this.showError('Сначала выберите PropertySet');
+            return;
+        }
+        if (!this.isCustomPropertySet(mapping.propertySet)) {
+            this.showError('Добавлять свойства можно только в пользовательские PropertySet');
+            return;
+        }
+        const newProperty = this.promptAddPropertyToCustomSet(mapping.propertySet);
+        if (newProperty) {
+            mapping.target = newProperty;
+            mapping.verified = false;
+            if (type === 'association') {
+                this.displayAssociationMapping();
+            } else if (type === 'attribute') {
+                this.displayAttributeMapping();
+            }
+        }
+    }
+
+    updateMappingPropertySet(selectType, index, propertySetValue) {
+        const targetType = selectType.startsWith('association') ? 'association' : 'attribute';
+        const mapping = this.getMappingEntry(targetType, index);
+        if (!mapping) return;
+
+        const normalizedValue = propertySetValue || null;
+        if (mapping.propertySet === normalizedValue) {
+            if (targetType === 'association') {
+                this.displayAssociationMapping();
+            } else {
+                this.displayAttributeMapping();
+            }
+            return;
+        }
+
+        mapping.propertySet = normalizedValue;
+        if (!normalizedValue) {
+            mapping.target = null;
+        } else {
+            const domainClass = this.getMappedIfcClass(mapping.domain);
+            const availableProperties = this.getPropertiesForPropertySet(normalizedValue, domainClass);
+            if (!availableProperties.includes(mapping.target)) {
+                mapping.target = null;
+            }
+        }
+
+        if (mapping.verified) {
+            mapping.verified = false;
+            const checkbox = document.querySelector(`.verified-checkbox[data-type="${targetType}"][data-index="${index}"]`);
+            if (checkbox) {
+                checkbox.checked = false;
+                const label = checkbox.nextElementSibling;
+                if (label) label.textContent = '✗';
+            }
+            this.showInfo('Значение изменено. Подтвердите соответствие заново.');
+        }
+
+        if (targetType === 'association') {
+            this.displayAssociationMapping();
+        } else {
+            this.displayAttributeMapping();
         }
     }
 
@@ -2203,7 +2845,7 @@ class IfcModelMapper {
                 
                 if (isVerified) {
                     const mapping = this.currentMapping.classMappings[index];
-                    this.addVerifiedMapping('class', mapping.source, mapping.target, mapping.predefinedType || null);
+                    this.addVerifiedMapping('class', mapping.source, mapping.target, { predefinedType: mapping.predefinedType || null });
                 }
             }
         } else if (type === 'attribute') {
@@ -2212,7 +2854,17 @@ class IfcModelMapper {
                 
                 if (isVerified) {
                     const mapping = this.currentMapping.attributeMappings[index];
-                    this.addVerifiedMapping('attribute', mapping.source, mapping.target);
+                    this.addVerifiedMapping('attribute', mapping.source, mapping.target, { propertySet: mapping.propertySet || null });
+                    if (mapping.domain && mapping.target) {
+                        const domainClass = this.getMappedIfcClass(mapping.domain);
+                        if (domainClass) {
+                            const classProperties = this.getIfcClassProperties(domainClass);
+                            if (!classProperties.includes(mapping.target)) {
+                                const propertySet = mapping.propertySet || 'Pset_Custom';
+                                this.addCustomPropertyToClass(domainClass, mapping.target, propertySet);
+                            }
+                        }
+                    }
                 }
             }
         } else if (type === 'association') {
@@ -2221,7 +2873,7 @@ class IfcModelMapper {
                 
                 if (isVerified) {
                     const mapping = this.currentMapping.associationMappings[index];
-                    this.addVerifiedMapping('association', mapping.source, mapping.target);
+                    this.addVerifiedMapping('association', mapping.source, mapping.target, { propertySet: mapping.propertySet || null });
                     
                     // Если это ObjectProperty и свойство не существует в схеме, добавляем его
                     if (mapping.domain && mapping.target) {
@@ -2229,7 +2881,8 @@ class IfcModelMapper {
                         if (domainClass) {
                             const classProperties = this.getIfcClassProperties(domainClass);
                             if (!classProperties.includes(mapping.target)) {
-                                this.addCustomPropertyToClass(domainClass, mapping.target);
+                                const propertySet = mapping.propertySet || 'Pset_Custom';
+                                this.addCustomPropertyToClass(domainClass, mapping.target, propertySet);
                             }
                         }
                     }
@@ -2294,7 +2947,9 @@ class IfcModelMapper {
                 const displayName = item.label || this.generateReadableName(item.source);
                 const status = item.verified ? '✓ ПОДТВЕРЖДЕНО' : '✗ НЕПОДТВЕРЖДЕНО';
                 const domainRange = item.domain && item.range ? ` (${item.domain} → ${item.range})` : '';
-                mappingText += `${index + 1}. ${displayName}${domainRange} (${item.source}) → ${item.target} [${status}]\n`;
+                const propertySetInfo = item.propertySet ? ` [PropertySet: ${item.propertySet}]` : '';
+                const targetValue = item.target || '-- не выбрано --';
+                mappingText += `${index + 1}. ${displayName}${domainRange} (${item.source}) → ${targetValue} [${status}]${propertySetInfo}\n`;
             });
         } else {
             mappingText += "Ассоциации не найдены\n";
@@ -2413,6 +3068,59 @@ DATA;
     saveAdvancedSettings() {
         this.hideAdvancedSettings();
         this.showSuccess('Настройки сохранены');
+    }
+
+    showPropertySetModal() {
+        const modal = document.getElementById('propertySetModal');
+        if (!modal) return;
+        modal.style.display = 'block';
+        this.renderPropertySetModal();
+    }
+
+    hidePropertySetModal() {
+        const modal = document.getElementById('propertySetModal');
+        if (!modal) return;
+        modal.style.display = 'none';
+    }
+
+    renderPropertySetModal() {
+        const list = document.getElementById('customPropertySetList');
+        if (!list) return;
+        const customSets = this.customPropertySets || {};
+        const names = Object.keys(customSets);
+
+        if (names.length === 0) {
+            list.innerHTML = '<div class="no-items">Пользовательские PropertySet отсутствуют</div>';
+            return;
+        }
+
+        names.sort((a, b) => a.localeCompare(b));
+        list.innerHTML = names.map(name => {
+            const props = customSets[name] || [];
+            const propertiesHtml = props.length > 0
+                ? props.map(prop => `
+                    <span class="propertyset-property-chip">
+                        ${this.escapeHtml(prop)}
+                        <button class="propertyset-chip-remove" data-action="remove-property" data-set="${this.escapeHtml(name)}" data-property="${this.escapeHtml(prop)}">&times;</button>
+                    </span>
+                `).join('')
+                : '<div class="propertyset-empty">Свойства отсутствуют</div>';
+
+            return `
+                <div class="propertyset-item">
+                    <div class="propertyset-item-header">
+                        <div class="propertyset-item-title">${this.escapeHtml(name)}</div>
+                        <div class="propertyset-item-actions">
+                            <button class="save-button" data-action="add-property" data-set="${this.escapeHtml(name)}">Добавить свойство</button>
+                            <button class="cancel-button" data-action="remove-set" data-set="${this.escapeHtml(name)}">Удалить PropertySet</button>
+                        </div>
+                    </div>
+                    <div class="propertyset-properties">
+                        ${propertiesHtml}
+                    </div>
+                </div>
+            `;
+        }).join('');
     }
 
     validateMapping() {
@@ -3333,6 +4041,8 @@ DATA;
                         if (importedSchema.Classes && importedSchema.DictionaryCode === 'ifc_custom') {
                             this.customIfcSchema = importedSchema;
                             this.saveCustomIfcSchema();
+                            this.allIfcPropertiesCache = null;
+                            this.invalidatePropertySetCache();
                             this.showSuccess('Пользовательская схема успешно импортирована');
                         } else {
                             this.showError('Неверный формат файла схемы');
@@ -3365,4 +4075,5 @@ style.textContent = `
         to { transform: translateX(100%); opacity: 0; }
     }
 `;
+document.head.appendChild(style);
 document.head.appendChild(style);

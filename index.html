@@ -6,6 +6,7 @@
     <title>IFC Model Mapper - Конвертер моделей</title>
     <link rel="stylesheet" href="styles.css">
     <script src="https://unpkg.com/monaco-editor@0.33.0/min/vs/loader.js"></script>
+	<link rel="icon" href="icons/donkey-kong.ico">
 </head>
 <body>
     <div class="app-container">
@@ -42,6 +43,7 @@
                         Настройки будут добавлены позже
                     </div>
                     <button id="advancedSettingsBtn">Дополнительные настройки</button>
+                    <button id="managePropertySetsBtn">Управление PropertySet</button>
                 </div>
             </div>
         </div>
@@ -62,7 +64,8 @@
                     <div class="tabs-header source-tabs-header">
                         <button class="tab-button active" data-tab="source-text">Текст</button>
                         <button class="tab-button" data-tab="source-classes">Классы</button>
-                        <button class="tab-button" data-tab="source-properties">Свойства</button>
+                        <button class="tab-button" data-tab="source-datatype-properties">DatatypeProperty</button>
+                        <button class="tab-button" data-tab="source-object-properties">ObjectProperty</button>
                     </div>
                     <div class="tabs-content source-tabs-content">
                         <div id="source-text" class="tab-pane active">
@@ -75,10 +78,17 @@
                                 </div>
                             </div>
                         </div>
-                        <div id="source-properties" class="tab-pane">
+                        <div id="source-datatype-properties" class="tab-pane">
                             <div class="owl-list-container">
-                                <div id="owlPropertiesList" class="owl-list">
-                                    <div class="no-items">Загрузите OWL файл для просмотра свойств</div>
+                                <div id="owlDatatypeList" class="owl-list">
+                                    <div class="no-items">Загрузите OWL файл для просмотра DatatypeProperty</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="source-object-properties" class="tab-pane">
+                            <div class="owl-list-container">
+                                <div id="owlObjectList" class="owl-list">
+                                    <div class="no-items">Загрузите OWL файл для просмотра ObjectProperty</div>
                                 </div>
                             </div>
                         </div>
@@ -196,6 +206,28 @@
             <div class="modal-footer">
                 <button id="cancelSettingsBtn" class="cancel-button">Отменить</button>
                 <button id="saveSettingsBtn" class="save-button">Сохранить настройки</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Property Set Management Modal -->
+    <div id="propertySetModal" class="modal">
+        <div class="modal-content propertyset-modal-content">
+            <div class="modal-header">
+                <h2>Пользовательские PropertySet</h2>
+                <button class="close-modal" id="closePropertySetModalBtn">×</button>
+            </div>
+            <div class="modal-body propertyset-modal-body">
+                <div class="propertyset-actions">
+                    <button id="addPropertySetBtn" class="save-button">Добавить PropertySet</button>
+                    <button id="clearAllPropertySetsBtn" class="cancel-button">Очистить все</button>
+                </div>
+                <div id="customPropertySetList" class="propertyset-list">
+                    <div class="no-items">Пользовательские PropertySet отсутствуют</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="propertySetModalCloseFooter" class="cancel-button">Закрыть</button>
             </div>
         </div>
     </div>
