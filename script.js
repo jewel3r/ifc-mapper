@@ -7,6 +7,13 @@ class IfcModelMapper {
         this.isEditorsReady = false;
         this.ifcSchema = null;
         this.customIfcSchema = null;
+        this.selectedClassForAttributes = null;
+        this.attributePanelHeight = this.loadAttributePanelHeight();
+        this.attributeResizerInitialized = false;
+        this.attributePanelIsResizing = false;
+        this.attributesByDomain = new Map();
+        this.allIfcPropertiesCache = null;
+        this.searchableSelectGlobalHandler = null;
         
         // Загружаем сохраненные маппинги и пользовательскую схему
         this.savedMappings = this.loadSavedMappings();
@@ -104,10 +111,77 @@ class IfcModelMapper {
         return merged;
     }
 
-    // Получение всех IFC классов из объединенной схемы
+    // Извлечение базового класса и PredefinedType из имени класса
+    // Например: "IfcRoadPartBICYCLECROSSING" -> { baseClass: "IfcRoadPart", predefinedType: "BICYCLECROSSING" }
+    // Или: "IfcRoadPartBUS_STOP" -> { baseClass: "IfcRoadPart", predefinedType: "BUS_STOP" }
+    parseIfcClassName(className) {
+        if (!className) return { baseClass: null, predefinedType: null };
+        
+        // Проверяем, есть ли в схеме класс с таким именем и есть ли у него ParentClassCode
+        const schema = this.getMergedIfcSchema();
+        const cls = schema.Classes.find(c => c.Code === className);
+        
+        if (cls && cls.ParentClassCode) {
+            // Проверяем, является ли это классом с PredefinedType
+            // Это класс с PredefinedType, если есть ParentClassCode и Description содержит упоминание о Predefined Type
+            const isPredefinedType = cls.Description && 
+                (cls.Description.toLowerCase().includes("predefined type") || 
+                 cls.Description.toLowerCase().includes("predefined"));
+            
+            if (isPredefinedType) {
+                // Извлекаем PredefinedType из имени: IfcRoadPartBICYCLECROSSING -> BICYCLECROSSING
+                const baseClass = cls.ParentClassCode;
+                if (className.startsWith(baseClass)) {
+                    const predefinedType = className.substring(baseClass.length);
+                    // Проверяем, что PredefinedType состоит только из заглавных букв и подчеркиваний
+                    if (/^[A-Z_]+$/.test(predefinedType)) {
+                        return { baseClass, predefinedType };
+                    }
+                }
+            }
+        }
+        
+        return { baseClass: className, predefinedType: null };
+    }
+
+    // Получение всех доступных PredefinedType для базового класса
+    getPredefinedTypesForClass(baseClass) {
+        if (!baseClass) return [];
+        
+        const schema = this.getMergedIfcSchema();
+        const predefinedTypes = [];
+        
+        schema.Classes.forEach(cls => {
+            if (cls.ParentClassCode === baseClass) {
+                // Проверяем, является ли это классом с PredefinedType
+                const isPredefinedType = cls.Description && 
+                    (cls.Description.toLowerCase().includes("predefined type") || 
+                     cls.Description.toLowerCase().includes("predefined"));
+                
+                if (isPredefinedType) {
+                    // Извлекаем PredefinedType из Code
+                    const parsed = this.parseIfcClassName(cls.Code);
+                    if (parsed.predefinedType) {
+                        predefinedTypes.push(parsed.predefinedType);
+                    }
+                }
+            }
+        });
+        
+        return [...new Set(predefinedTypes)].sort();
+    }
+
+    // Получение всех IFC классов из объединенной схемы (только базовые классы)
     getIfcClasses() {
         const schema = this.getMergedIfcSchema();
-        return schema.Classes.map(cls => cls.Code).sort();
+        const baseClasses = new Set();
+        
+        schema.Classes.forEach(cls => {
+            const parsed = this.parseIfcClassName(cls.Code);
+            baseClasses.add(parsed.baseClass);
+        });
+        
+        return Array.from(baseClasses).sort();
     }
 
     // Получение свойств для конкретного IFC класса
@@ -122,6 +196,10 @@ class IfcModelMapper {
 
     // Получение всех свойств из схемы
     getAllIfcProperties() {
+        if (this.allIfcPropertiesCache) {
+            return this.allIfcPropertiesCache;
+        }
+
         const schema = this.getMergedIfcSchema();
         const allProperties = new Set();
         
@@ -133,7 +211,106 @@ class IfcModelMapper {
             }
         });
         
-        return Array.from(allProperties).sort();
+        this.allIfcPropertiesCache = Array.from(allProperties).sort();
+        return this.allIfcPropertiesCache;
+    }
+
+    loadAttributePanelHeight() {
+        try {
+            const saved = localStorage.getItem('ifcMapperAttributePanelHeight');
+            if (saved) {
+                const parsed = parseInt(saved, 10);
+                if (!isNaN(parsed)) {
+                    return this.clampAttributePanelHeight(parsed);
+                }
+            }
+        } catch (error) {
+            console.warn('Unable to load attribute panel height:', error);
+        }
+        return 360;
+    }
+
+    saveAttributePanelHeight(height) {
+        try {
+            localStorage.setItem('ifcMapperAttributePanelHeight', String(height));
+        } catch (error) {
+            console.warn('Unable to save attribute panel height:', error);
+        }
+    }
+
+    clampAttributePanelHeight(value) {
+        const min = 220;
+        const viewportMax = (typeof window !== 'undefined' && window.innerHeight)
+            ? Math.max(320, window.innerHeight - 220)
+            : 700;
+        const max = Math.max(min + 100, Math.min(700, viewportMax));
+        return Math.min(Math.max(value, min), max);
+    }
+
+    applyAttributePanelHeight() {
+        const panel = document.getElementById('attributePanel');
+        if (!panel) return;
+        const height = this.clampAttributePanelHeight(this.attributePanelHeight || 360);
+        this.attributePanelHeight = height;
+        panel.style.height = `${height}px`;
+        panel.style.setProperty('--attribute-panel-height', `${height}px`);
+    }
+
+    bindAttributeResizer() {
+        if (this.attributeResizerInitialized) return;
+        const resizer = document.getElementById('attributeResizer');
+        const panel = document.getElementById('attributePanel');
+        if (!resizer || !panel) return;
+
+        const startResize = (e) => {
+            e.preventDefault();
+            const startY = e.clientY;
+            const startHeight = panel.offsetHeight;
+            this.attributePanelIsResizing = true;
+            document.body.classList.add('resizing-vertical');
+
+            const onMouseMove = (moveEvent) => {
+                if (!this.attributePanelIsResizing) return;
+                const delta = startY - moveEvent.clientY;
+                const newHeight = this.clampAttributePanelHeight(startHeight + delta);
+                this.attributePanelHeight = newHeight;
+                panel.style.height = `${newHeight}px`;
+                panel.style.setProperty('--attribute-panel-height', `${newHeight}px`);
+            };
+
+            const stopResize = () => {
+                if (!this.attributePanelIsResizing) return;
+                this.attributePanelIsResizing = false;
+                document.body.classList.remove('resizing-vertical');
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', stopResize);
+                this.saveAttributePanelHeight(this.attributePanelHeight);
+            };
+
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', stopResize);
+        };
+
+        resizer.addEventListener('mousedown', startResize);
+        this.attributeResizerInitialized = true;
+    }
+
+    getIfcDataTypes() {
+        const baseProperties = this.ifcSchema?.Properties || [];
+        const customProperties = this.customIfcSchema?.Properties || [];
+        const dataTypes = new Set();
+
+        [...baseProperties, ...customProperties].forEach(prop => {
+            if (prop?.DataType) {
+                dataTypes.add(prop.DataType);
+            }
+        });
+
+        if (dataTypes.size === 0) {
+            ['String', 'Boolean', 'Integer', 'Real', 'Number', 'Date', 'DateTime', 'Time'].forEach(type => dataTypes.add(type));
+        }
+
+        return Array.from(dataTypes).sort();
     }
 
 
@@ -179,6 +356,7 @@ class IfcModelMapper {
 			});
 			
 			this.saveCustomIfcSchema();
+            this.allIfcPropertiesCache = null;
 			this.showSuccess(`Свойство "${propertyName}" добавлено к классу ${ifcClass}`);
 		}
 	}
@@ -227,6 +405,7 @@ class IfcModelMapper {
                 classMappings: {},
                 attributeMappings: {},
                 associationMappings: {},
+                typeMappings: {},
                 lastUpdated: null
             };
             
@@ -235,7 +414,8 @@ class IfcModelMapper {
                 return {
                     ...defaultMappings,
                     ...parsed,
-                    associationMappings: parsed.associationMappings || {}
+                    associationMappings: parsed.associationMappings || {},
+                    typeMappings: parsed.typeMappings || {}
                 };
             }
             return defaultMappings;
@@ -260,10 +440,11 @@ class IfcModelMapper {
     }
 
     // Добавление подтвержденного маппинга в сохраненные
-    addVerifiedMapping(type, source, target) {
+    addVerifiedMapping(type, source, target, predefinedType = null) {
         if (type === 'class') {
             this.savedMappings.classMappings[source] = {
                 target: target,
+                predefinedType: predefinedType,
                 lastUsed: new Date().toISOString(),
                 usageCount: (this.savedMappings.classMappings[source]?.usageCount || 0) + 1
             };
@@ -279,6 +460,12 @@ class IfcModelMapper {
                 lastUsed: new Date().toISOString(),
                 usageCount: (this.savedMappings.associationMappings[source]?.usageCount || 0) + 1
             };
+        } else if (type === 'type') {
+            this.savedMappings.typeMappings[source] = {
+                target: target,
+                lastUsed: new Date().toISOString(),
+                usageCount: (this.savedMappings.typeMappings?.[source]?.usageCount || 0) + 1
+            };
         }
         this.savedMappings.lastUpdated = new Date().toISOString();
         this.saveMappings();
@@ -292,6 +479,8 @@ class IfcModelMapper {
             return this.savedMappings.attributeMappings[source];
         } else if (type === 'association') {
             return this.savedMappings.associationMappings?.[source];
+        } else if (type === 'type') {
+            return this.savedMappings.typeMappings?.[source];
         }
         return null;
     }
@@ -302,6 +491,7 @@ class IfcModelMapper {
             classMappings: {},
             attributeMappings: {},
             associationMappings: {},
+            typeMappings: {},
             lastUpdated: null
         };
         this.saveMappings();
@@ -328,6 +518,15 @@ class IfcModelMapper {
                 automaticLayout: true
             });
 
+            // Обработчик изменений в исходном редакторе для обновления списков
+            let updateTimeout;
+            this.sourceEditor.onDidChangeModelContent(() => {
+                clearTimeout(updateTimeout);
+                updateTimeout = setTimeout(() => {
+                    this.updateOwlLists();
+                }, 500); // Задержка для избежания частых обновлений
+            });
+
             this.targetEditor = monaco.editor.create(document.getElementById('targetEditor'), {
                 value: '// IFC результат появится здесь после настройки соответствий',
                 language: 'plaintext',
@@ -339,6 +538,8 @@ class IfcModelMapper {
             });
 
             this.isEditorsReady = true;
+            // Обновляем списки классов и свойств при инициализации
+            setTimeout(() => this.updateOwlLists(), 200);
             this.showSuccess('Редакторы загружены и готовы к работе');
         });
     }
@@ -348,25 +549,61 @@ class IfcModelMapper {
         tabButtons.forEach(button => {
             button.addEventListener('click', () => {
                 const tabId = button.getAttribute('data-tab');
-                this.switchTab(tabId);
+                // Определяем, к какому контейнеру относится вкладка
+                const container = button.closest('.tabs-container');
+                if (container && container.classList.contains('source-tabs-container')) {
+                    this.switchSourceTab(tabId);
+                } else {
+                    this.switchTab(tabId);
+                }
             });
         });
     }
 
     switchTab(tabId) {
-        document.querySelectorAll('.tab-button').forEach(btn => {
-            btn.classList.remove('active');
-        });
-        document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
+        // Для правой панели (target)
+        const targetContainer = document.querySelector('.tabs-container:not(.source-tabs-container)');
+        if (targetContainer) {
+            targetContainer.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            const button = targetContainer.querySelector(`[data-tab="${tabId}"]`);
+            if (button) button.classList.add('active');
 
-        document.querySelectorAll('.tab-pane').forEach(pane => {
-            pane.classList.remove('active');
-        });
-        document.getElementById(tabId).classList.add('active');
+            targetContainer.querySelectorAll('.tab-pane').forEach(pane => {
+                pane.classList.remove('active');
+            });
+            const pane = targetContainer.querySelector(`#${tabId}`);
+            if (pane) pane.classList.add('active');
+        }
 
         setTimeout(() => {
             if (this.targetEditor) {
                 this.targetEditor.layout();
+            }
+        }, 100);
+    }
+
+    switchSourceTab(tabId) {
+        // Для левой панели (source)
+        const sourceContainer = document.querySelector('.source-tabs-container');
+        if (sourceContainer) {
+            sourceContainer.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            const button = sourceContainer.querySelector(`[data-tab="${tabId}"]`);
+            if (button) button.classList.add('active');
+
+            sourceContainer.querySelectorAll('.tab-pane').forEach(pane => {
+                pane.classList.remove('active');
+            });
+            const pane = sourceContainer.querySelector(`#${tabId}`);
+            if (pane) pane.classList.add('active');
+        }
+
+        setTimeout(() => {
+            if (this.sourceEditor) {
+                this.sourceEditor.layout();
             }
         }, 100);
     }
@@ -376,7 +613,7 @@ class IfcModelMapper {
         document.getElementById('fileInput').addEventListener('change', (e) => this.handleFileUpload(e));
         document.getElementById('detectTypeBtn').addEventListener('click', () => this.autoDetectType());
         document.getElementById('validateSourceBtn').addEventListener('click', () => this.validateSource());
-        document.getElementById('downloadBtn').addEventListener('click', () => this.downloadIfc());
+        //document.getElementById('downloadBtn').addEventListener('click', () => this.downloadIfc());
         document.getElementById('formatSourceBtn').addEventListener('click', () => this.formatSource());
         document.getElementById('exportMappingBtn').addEventListener('click', () => this.exportMapping());
         
@@ -498,6 +735,8 @@ class IfcModelMapper {
             const content = await this.readFileContent(file);
             this.sourceEditor.setValue(content);
             this.autoDetectTypeFromContent(content, file.name);
+            // Обновляем списки классов и свойств
+            setTimeout(() => this.updateOwlLists(), 100);
             this.showSuccess(`Файл "${file.name}" успешно загружен`);
         } catch (error) {
             this.showError(`Ошибка загрузки файла: ${error.message}`);
@@ -648,7 +887,14 @@ class IfcModelMapper {
                     const cardinalityMatch = block.match(/owl:cardinality\s+"([^"]+)"/);
 
                     const domain = domainMatch ? toLocalName(domainMatch[1]) : null;
-                    const range = rangeMatch ? toLocalName(rangeMatch[1]) : null;
+                    const rangeToken = rangeMatch ? rangeMatch[1].trim() : null;
+                    let range = null;
+
+                    if (propertyType === 'ObjectProperty') {
+                        range = rangeToken ? toLocalName(rangeToken) : null;
+                    } else {
+                        range = rangeToken ? this.formatDatatype(rangeToken) : null;
+                    }
                     const cardinality = cardinalityMatch ? cardinalityMatch[1] : null;
 
                     if (propertyType === 'ObjectProperty') {
@@ -665,7 +911,8 @@ class IfcModelMapper {
                             name: subject,
                             type: 'DatatypeProperty',
                             label: this.extractLabel(turtleCode, subject),
-                            domain: domain
+                            domain: domain,
+                            range: range
                         });
                     }
                 }
@@ -698,12 +945,249 @@ class IfcModelMapper {
         return this.generateReadableName(elementName);
     }
 
+    // Парсинг OWL с сохранением позиций для навигации
+    parseOwlWithPositions(turtleCode) {
+        const toLocalName = (token) => {
+            if (!token) return null;
+            let t = token.trim().replace(/[.;]$/, '');
+            const iriMatch = t.match(/^<([^>]+)>$/);
+            if (iriMatch) {
+                const iri = iriMatch[1];
+                const hashIdx = iri.lastIndexOf('#');
+                if (hashIdx >= 0 && hashIdx < iri.length - 1) return iri.substring(hashIdx + 1);
+                const slashIdx = iri.lastIndexOf('/');
+                if (slashIdx >= 0 && slashIdx < iri.length - 1) return iri.substring(slashIdx + 1);
+                return iri;
+            }
+            const qnameMatch = t.match(/^([A-Za-z_][\w-]*:)?([\w-]+)$/);
+            if (qnameMatch) return qnameMatch[2];
+            return null;
+        };
+
+        const classes = [];
+        const properties = [];
+        const lines = turtleCode.split('\n');
+        
+        // Разбиваем на блоки по завершающей точке (как в parseOwlTurtle)
+        const blocks = [];
+        let buffer = '';
+        let blockStartLine = 0;
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (!line || line.startsWith('#')) continue;
+            if (buffer === '') blockStartLine = i;
+            buffer += (buffer ? ' ' : '') + line;
+            if (line.endsWith('.')) {
+                blocks.push({ text: buffer, startLine: blockStartLine });
+                buffer = '';
+            }
+        }
+        if (buffer) blocks.push({ text: buffer, startLine: blockStartLine });
+        
+        // Находим классы в блоках
+        blocks.forEach(block => {
+            const classDecl = block.text.match(/^(.+?)\s+(a|rdf:type)\s+owl:Class\b/);
+            if (classDecl) {
+                const subject = toLocalName(classDecl[1]);
+                if (subject && !classes.find(c => c.name === subject)) {
+                    // Находим строку, где начинается определение
+                    const blockLines = turtleCode.split('\n');
+                    let foundLine = block.startLine;
+                    for (let i = block.startLine; i < blockLines.length && i < block.startLine + 10; i++) {
+                        if (blockLines[i].includes(subject) && (blockLines[i].includes('owl:Class') || blockLines[i].includes('a owl:Class'))) {
+                            foundLine = i;
+                            break;
+                        }
+                    }
+                    classes.push({
+                        name: subject,
+                        label: this.extractLabel(turtleCode, subject),
+                        lineNumber: foundLine + 1,
+                        column: 1
+                    });
+                }
+            }
+        });
+
+        // Находим свойства в блоках
+        blocks.forEach(block => {
+            const propDecl = block.text.match(/^(.+?)\s+(a|rdf:type)\s+owl:(ObjectProperty|DatatypeProperty)\b/);
+            if (propDecl) {
+                const subject = toLocalName(propDecl[1]);
+                const propertyType = propDecl[3];
+                if (subject && !properties.find(p => p.name === subject)) {
+                    // Находим строку, где начинается определение
+                    const blockLines = turtleCode.split('\n');
+                    let foundLine = block.startLine;
+                    for (let i = block.startLine; i < blockLines.length && i < block.startLine + 10; i++) {
+                        if (blockLines[i].includes(subject) && blockLines[i].includes(propertyType)) {
+                            foundLine = i;
+                            break;
+                        }
+                    }
+                    properties.push({
+                        name: subject,
+                        type: propertyType,
+                        label: this.extractLabel(turtleCode, subject),
+                        lineNumber: foundLine + 1,
+                        column: 1
+                    });
+                }
+            }
+        });
+
+        return { classes, properties };
+    }
+
+    // Обновление списков классов и свойств
+    updateOwlLists() {
+        if (!this.sourceEditor) return;
+        
+        const sourceCode = this.sourceEditor.getValue();
+        if (!sourceCode || sourceCode.trim().length === 0) {
+            this.clearOwlLists();
+            return;
+        }
+
+        try {
+            const parsed = this.parseOwlWithPositions(sourceCode);
+            this.displayOwlClasses(parsed.classes);
+            this.displayOwlProperties(parsed.properties);
+        } catch (error) {
+            console.error('Ошибка парсинга OWL:', error);
+            this.clearOwlLists();
+        }
+    }
+
+    // Отображение списка классов
+    displayOwlClasses(classes) {
+        const container = document.getElementById('owlClassesList');
+        if (!container) return;
+
+        if (classes.length === 0) {
+            container.innerHTML = '<div class="no-items">Классы не найдены</div>';
+            return;
+        }
+
+        container.innerHTML = '';
+        classes.forEach(cls => {
+            const item = document.createElement('div');
+            item.className = 'owl-list-item';
+            item.innerHTML = `
+                <div class="owl-list-item-name">${this.escapeHtml(cls.name)}</div>
+                ${cls.label && cls.label !== cls.name ? `<div class="owl-list-item-label">${this.escapeHtml(cls.label)}</div>` : ''}
+                <div class="owl-list-item-type">Class</div>
+            `;
+            item.addEventListener('dblclick', () => this.navigateToDefinition(cls, cls.name));
+            container.appendChild(item);
+        });
+    }
+
+    // Отображение списка свойств
+    displayOwlProperties(properties) {
+        const container = document.getElementById('owlPropertiesList');
+        if (!container) return;
+
+        if (properties.length === 0) {
+            container.innerHTML = '<div class="no-items">Свойства не найдены</div>';
+            return;
+        }
+
+        container.innerHTML = '';
+        properties.forEach(prop => {
+            const item = document.createElement('div');
+            item.className = 'owl-list-item';
+            item.innerHTML = `
+                <div class="owl-list-item-name">${this.escapeHtml(prop.name)}</div>
+                ${prop.label && prop.label !== prop.name ? `<div class="owl-list-item-label">${this.escapeHtml(prop.label)}</div>` : ''}
+                <div class="owl-list-item-type">${prop.type}</div>
+            `;
+            item.addEventListener('dblclick', () => this.navigateToDefinition(prop, prop.name));
+            container.appendChild(item);
+        });
+    }
+
+    // Очистка списков
+    clearOwlLists() {
+        const classesContainer = document.getElementById('owlClassesList');
+        const propertiesContainer = document.getElementById('owlPropertiesList');
+        
+        if (classesContainer) {
+            classesContainer.innerHTML = '<div class="no-items">Загрузите OWL файл для просмотра классов</div>';
+        }
+        if (propertiesContainer) {
+            propertiesContainer.innerHTML = '<div class="no-items">Загрузите OWL файл для просмотра свойств</div>';
+        }
+    }
+
+    // Навигация к определению в тексте
+    navigateToDefinition(elementInfo, elementName) {
+        if (!this.sourceEditor) return;
+
+        // Переключаемся на вкладку "Текст"
+        this.switchSourceTab('source-text');
+
+        // Ждем немного, чтобы вкладка переключилась
+        setTimeout(() => {
+            const model = this.sourceEditor.getModel();
+            const lineNumber = elementInfo.lineNumber || 1;
+            const column = elementInfo.column || 1;
+            
+            // Переходим к позиции
+            const position = { lineNumber, column };
+            this.sourceEditor.setPosition(position);
+            this.sourceEditor.revealLineInCenter(lineNumber);
+            
+            // Выделяем строку
+            const lineLength = model.getLineLength(lineNumber);
+            this.sourceEditor.setSelection({
+                startLineNumber: lineNumber,
+                startColumn: 1,
+                endLineNumber: lineNumber,
+                endColumn: lineLength + 1
+            });
+
+            // Фокус на редактор
+            this.sourceEditor.focus();
+        }, 100);
+    }
+
+    // Экранирование HTML
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
     generateReadableName(technicalName) {
         return technicalName
             .replace(/([A-Z])/g, ' $1')
             .replace(/_/g, ' ')
             .replace(/^\w/, c => c.toUpperCase())
             .trim();
+    }
+
+    formatDatatype(value) {
+        if (!value) return null;
+        const trimmed = value.trim().replace(/[.;]$/, '');
+        const knownPrefixes = [
+            { iri: 'http://www.w3.org/2001/XMLSchema#', prefix: 'xsd:' },
+            { iri: 'https://www.w3.org/2001/XMLSchema#', prefix: 'xsd:' },
+            { iri: 'http://www.w3.org/1999/02/22-rdf-syntax-ns#', prefix: 'rdf:' },
+            { iri: 'http://www.w3.org/2000/01/rdf-schema#', prefix: 'rdfs:' }
+        ];
+
+        for (const { iri, prefix } of knownPrefixes) {
+            if (trimmed.startsWith(iri)) {
+                return `${prefix}${trimmed.substring(iri.length)}`;
+            }
+        }
+
+        if (trimmed.startsWith('#')) {
+            return trimmed.substring(1);
+        }
+
+        return trimmed;
     }
 
     parseOwlRdf(rdfCode) {
@@ -744,7 +1228,7 @@ class IfcModelMapper {
             
             if (propertyType === 'ObjectProperty') {
                 // Ищем range в RDF
-                const rangeMatch = /<rdfs:range rdf:resource="#(\w+)"/.exec(propBlock);
+                const rangeMatch = /<rdfs:range[^>]*rdf:resource="#?([\w-]+)"/.exec(propBlock);
                 if (rangeMatch) {
                     range = rangeMatch[1];
                 }
@@ -764,11 +1248,17 @@ class IfcModelMapper {
                     cardinality: cardinality
                 });
             } else {
+                const datatypeRangeMatch = /<rdfs:range[^>]*rdf:resource="([^"]+)"/.exec(propBlock);
+                if (datatypeRangeMatch) {
+                    range = this.formatDatatype(datatypeRangeMatch[1]);
+                }
+
                 properties.push({
                     name: propertyName,
                     type: 'DatatypeProperty',
                     label: labelMatch ? labelMatch[1] : this.generateReadableName(propertyName),
-                    domain: domain
+                    domain: domain,
+                    range: range
                 });
             }
         }
@@ -786,9 +1276,12 @@ class IfcModelMapper {
             sourceType: sourceModel.type,
             classMappings: [],
             attributeMappings: [],
+            typeMappings: [],
             associationMappings: [],
             timestamp: new Date().toISOString()
         };
+        this.attributesByDomain = new Map();
+        this.allIfcPropertiesCache = null;
 
         if (sourceModel.classes && sourceModel.classes.length > 0) {
             sourceModel.classes.forEach(cls => {
@@ -797,24 +1290,43 @@ class IfcModelMapper {
                 let verified = false;
 
                 if (savedMapping) {
-                    defaultMapping = savedMapping.target;
+                    // Если в сохраненном маппинге есть PredefinedType, используем его
+                    // Иначе парсим из target на случай, если target содержит PredefinedType
+                    const parsed = savedMapping.predefinedType ? 
+                        { baseClass: savedMapping.target, predefinedType: savedMapping.predefinedType } :
+                        this.parseIfcClassName(savedMapping.target);
+                    
+                    defaultMapping = parsed.baseClass || savedMapping.target;
                     verified = true;
+                    
+                    this.currentMapping.classMappings.push({
+                        source: cls.name,
+                        target: defaultMapping,
+                        predefinedType: parsed.predefinedType || null,
+                        label: cls.label,
+                        type: 'class',
+                        verified: verified
+                    });
                 } else {
                     defaultMapping = this.getDefaultClassMapping(cls.name);
+                    
+                    // Парсим базовый класс и PredefinedType из defaultMapping
+                    const parsed = this.parseIfcClassName(defaultMapping);
+                    
+                    this.currentMapping.classMappings.push({
+                        source: cls.name,
+                        target: parsed.baseClass || defaultMapping,
+                        predefinedType: parsed.predefinedType || null,
+                        label: cls.label,
+                        type: 'class',
+                        verified: verified
+                    });
                 }
-
-                this.currentMapping.classMappings.push({
-                    source: cls.name,
-                    target: defaultMapping,
-                    label: cls.label,
-                    type: 'class',
-                    verified: verified
-                });
             });
         }
 
         if (sourceModel.properties && sourceModel.properties.length > 0) {
-            sourceModel.properties.forEach(prop => {
+            sourceModel.properties.forEach((prop, index) => {
                 const savedMapping = this.getSavedMapping('attribute', prop.name);
                 let defaultMapping;
                 let verified = false;
@@ -826,16 +1338,60 @@ class IfcModelMapper {
                     defaultMapping = this.getDefaultAttributeMapping(prop.name);
                 }
 
-                this.currentMapping.attributeMappings.push({
+                const attributeEntry = {
                     source: prop.name,
                     target: defaultMapping,
                     label: prop.label,
                     type: 'attribute',
                     domain: prop.domain,
+                    range: prop.range,
+                    verified: verified
+                };
+
+                this.currentMapping.attributeMappings.push(attributeEntry);
+
+                const domainKey = prop.domain || '__NO_DOMAIN__';
+                if (!this.attributesByDomain.has(domainKey)) {
+                    this.attributesByDomain.set(domainKey, []);
+                }
+                this.attributesByDomain.get(domainKey).push({
+                    mapping: attributeEntry,
+                    index: this.currentMapping.attributeMappings.length - 1
+                });
+            });
+        }
+
+        this.selectedClassForAttributes = this.getInitialAttributeClassSelection();
+
+        const typeMappings = new Map();
+        if (sourceModel.properties && sourceModel.properties.length > 0) {
+            sourceModel.properties.forEach(prop => {
+                if (!prop.range) return;
+                const rangeKey = prop.range.trim();
+                if (!rangeKey) return;
+                if (typeMappings.has(rangeKey)) return;
+
+                const savedMapping = this.getSavedMapping('type', rangeKey);
+                let defaultMapping;
+                let verified = false;
+
+                if (savedMapping) {
+                    defaultMapping = savedMapping.target;
+                    verified = true;
+                } else {
+                    defaultMapping = this.getDefaultTypeMapping(prop.range);
+                }
+
+                typeMappings.set(rangeKey, {
+                    source: rangeKey,
+                    target: defaultMapping,
+                    label: rangeKey,
+                    type: 'type',
                     verified: verified
                 });
             });
         }
+        this.currentMapping.typeMappings = Array.from(typeMappings.values());
         
         if (sourceModel.associations && sourceModel.associations.length > 0) {
             sourceModel.associations.forEach(assoc => {
@@ -865,7 +1421,9 @@ class IfcModelMapper {
 
         this.displayClassMapping();
         this.displayAttributeMapping();
+        this.displayTypeMapping();
         this.displayAssociationMapping();
+        this.bindSearchableSelectEvents();
         this.switchTab('class-mapping');
         
         this.showAutoAppliedMappingsStats();
@@ -874,11 +1432,12 @@ class IfcModelMapper {
     showAutoAppliedMappingsStats() {
         const autoAppliedClasses = this.currentMapping.classMappings.filter(item => item.verified).length;
         const autoAppliedAttributes = this.currentMapping.attributeMappings.filter(item => item.verified).length;
+        const autoAppliedTypes = this.currentMapping.typeMappings.filter(item => item.verified).length;
         
-        if (autoAppliedClasses > 0 || autoAppliedAttributes > 0) {
+        if (autoAppliedClasses > 0 || autoAppliedAttributes > 0 || autoAppliedTypes > 0) {
             this.showSuccess(
                 `Автоматически применено сохраненных соответствий: ` +
-                `${autoAppliedClasses} классов, ${autoAppliedAttributes} атрибутов`
+                `${autoAppliedClasses} классов, ${autoAppliedAttributes} атрибутов, ${autoAppliedTypes} типов`
             );
         }
     }
@@ -914,7 +1473,11 @@ class IfcModelMapper {
             'Generator': 'IfcElectricGenerator',
             'Transformer': 'IfcElectricGenerator'
         };
-        return defaultMappings[className] || 'IfcProduct';
+        
+        const mapping = defaultMappings[className] || 'IfcProduct';
+        // Парсим на случай, если маппинг содержит PredefinedType
+        const parsed = this.parseIfcClassName(mapping);
+        return parsed.baseClass || mapping;
     }
 
     getDefaultAttributeMapping(attributeName) {
@@ -944,6 +1507,44 @@ class IfcModelMapper {
         return defaultMappings[attributeName] || attributeName.toUpperCase();
     }
 
+    getInitialAttributeClassSelection() {
+        if (!this.currentMapping || !this.currentMapping.classMappings || this.currentMapping.classMappings.length === 0) {
+            return null;
+        }
+
+        const classMappings = this.currentMapping.classMappings;
+        const attributeDomains = new Set(
+            (this.currentMapping.attributeMappings || [])
+                .map(attr => attr.domain)
+                .filter(Boolean)
+        );
+
+        if (attributeDomains.size > 0) {
+            const firstMatch = classMappings.find(cls => attributeDomains.has(cls.source));
+            if (firstMatch) {
+                return firstMatch.source;
+            }
+        }
+
+        return classMappings[0]?.source || null;
+    }
+
+    getDefaultTypeMapping(sourceType) {
+        if (!sourceType) return 'String';
+        const normalized = sourceType.toLowerCase();
+
+        if (normalized.includes('bool')) return 'Boolean';
+        if (normalized.includes('int')) return 'Integer';
+        if (normalized.includes('decimal') || normalized.includes('double') || normalized.includes('float') || normalized.includes('real')) return 'Real';
+        if (normalized.includes('number')) return 'Number';
+        if (normalized.includes('date') && normalized.includes('time')) return 'DateTime';
+        if (normalized.includes('date')) return 'Date';
+        if (normalized.includes('time')) return 'Time';
+        if (normalized.includes('string') || normalized.includes('char') || normalized.includes('text')) return 'String';
+
+        return 'String';
+    }
+
 	displayClassMapping() {
 		const container = document.getElementById('classMappingList');
 		container.innerHTML = '';
@@ -956,36 +1557,55 @@ class IfcModelMapper {
 		this.currentMapping.classMappings.forEach((mapping, index) => {
 			const item = document.createElement('div');
 			item.className = 'mapping-item';
+            item.setAttribute('data-class-source', mapping.source);
 			
 			const displayName = mapping.label || this.generateReadableName(mapping.source);
 			const savedMapping = this.getSavedMapping('class', mapping.source);
 			const usageInfo = savedMapping ? ` (использовано ${savedMapping.usageCount} раз)` : '';
 			
 			const ifcClasses = this.getIfcClasses();
-			const isCustomValue = !ifcClasses.includes(mapping.target);
+			// Для классов запрещаем произвольные значения — только из схемы
 			
+			// Получаем доступные PredefinedType для выбранного класса
+			const predefinedTypes = this.getPredefinedTypesForClass(mapping.target);
+			const currentPredefinedType = mapping.predefinedType || '';
+			
+			const isSelected = mapping.source === this.selectedClassForAttributes;
+            if (isSelected) {
+                item.classList.add('selected-class');
+            }
+
 			item.innerHTML = `
 				<div class="source-item">
 					<div class="element-name">${displayName}</div>
 					<div class="element-technical">${mapping.source}${usageInfo}</div>
 				</div>
-				<div class="target-item">
-					<div class="searchable-select" data-index="${index}" data-type="class">
-						<div class="selected-value">${mapping.target || '-- Выберите IFC класс --'}</div>
-						<div class="dropdown">
-							<input type="text" class="search-input" placeholder="Поиск IFC класса...">
-							<div class="options-list">
-								<div class="option ${isCustomValue ? 'selected' : ''}" data-value="custom">-- Другое --</div>
-								${ifcClasses.map(cls => 
-									`<div class="option ${cls === mapping.target ? 'selected' : ''}" data-value="${cls}">${cls}</div>`
-								).join('')}
+				<div class="target-item attribute-target">
+					<div class="class-mapping-container">
+						<div class="searchable-select" data-index="${index}" data-type="class">
+							<div class="selected-value">${mapping.target || '-- Выберите IFC класс --'}</div>
+							<div class="dropdown">
+								<input type="text" class="search-input" placeholder="Поиск IFC класса...">
+								<div class="options-list">
+									${ifcClasses.map(cls => 
+										`<div class="option ${cls === mapping.target ? 'selected' : ''}" data-value="${cls}">${cls}</div>`
+									).join('')}
+								</div>
 							</div>
 						</div>
+						<input type="text" class="mapping-input" 
+							   style="display: none;"
+							   value="" 
+							   placeholder="Введите IFC класс">
+						${predefinedTypes.length > 0 ? `
+							<select class="predefined-type-select" data-index="${index}" data-type="predefinedType">
+								<option value="">-- Не указывать PredefinedType --</option>
+								${predefinedTypes.map(type => 
+									`<option value="${type}" ${type === currentPredefinedType ? 'selected' : ''}>${type}</option>`
+								).join('')}
+							</select>
+						` : ''}
 					</div>
-					<input type="text" class="mapping-input" 
-						   style="display: ${isCustomValue ? 'block' : 'none'};"
-						   value="${isCustomValue ? mapping.target : ''}" 
-						   placeholder="Введите IFC класс">
 				</div>
 				<div class="verified-item">
 					<input type="checkbox" class="verified-checkbox" data-index="${index}" data-type="class" 
@@ -993,47 +1613,115 @@ class IfcModelMapper {
 					<span class="verified-label">${mapping.verified ? '✓' : '✗'}</span>
 				</div>
 			`;
-			container.appendChild(item);
+			item.addEventListener('click', (event) => this.handleClassSelection(event, mapping.source));
+
+            container.appendChild(item);
 		});
 
 		this.bindMappingEvents('class');
-		this.bindSearchableSelectEvents();
+		this.bindPredefinedTypeEvents();
+        this.bindSearchableSelectEvents();
+        this.updateClassSelectionHighlight();
 	}
+
+    handleClassSelection(event, className) {
+        if (
+            event.target.closest('.searchable-select') ||
+            event.target.closest('.verified-item') ||
+            event.target.closest('.predefined-type-select')
+        ) {
+            return;
+        }
+        this.selectClassForAttributes(className);
+    }
+
+    selectClassForAttributes(className) {
+        if (!className || this.selectedClassForAttributes === className) {
+            return;
+        }
+        this.selectedClassForAttributes = className;
+        this.updateClassSelectionHighlight();
+        this.displayAttributeMapping();
+    }
+
+    updateClassSelectionHighlight() {
+        const container = document.getElementById('classMappingList');
+        if (!container) return;
+        const items = container.querySelectorAll('.mapping-item');
+        items.forEach(item => {
+            if (item.getAttribute('data-class-source') === this.selectedClassForAttributes) {
+                item.classList.add('selected-class');
+            } else {
+                item.classList.remove('selected-class');
+            }
+        });
+    }
 
 	displayAttributeMapping() {
 		const container = document.getElementById('attributeMappingList');
-		container.innerHTML = '';
+        const breadcrumb = document.getElementById('attributeBreadcrumb');
+        if (!container || !breadcrumb) return;
 
-		if (this.currentMapping.attributeMappings.length === 0) {
+		container.innerHTML = '';
+        this.applyAttributePanelHeight();
+        this.bindAttributeResizer();
+
+        if (!this.currentMapping) {
+            breadcrumb.textContent = 'Классы › Атрибуты отсутствуют';
 			container.innerHTML = '<div class="no-mappings">Атрибуты не найдены в исходной модели</div>';
 			return;
 		}
 
-		this.currentMapping.attributeMappings.forEach((mapping, index) => {
+        const attributeMappings = this.currentMapping.attributeMappings || [];
+
+        if (attributeMappings.length === 0) {
+            breadcrumb.textContent = 'Классы › Атрибуты отсутствуют';
+			container.innerHTML = '<div class="no-mappings">Атрибуты не найдены в исходной модели</div>';
+			return;
+        }
+
+        if (!this.selectedClassForAttributes) {
+            breadcrumb.innerHTML = 'Классы › <span>Выберите класс</span>';
+            container.innerHTML = '<div class="no-mappings">Выберите класс, чтобы увидеть его атрибуты</div>';
+            return;
+        }
+
+        const currentClass = this.currentMapping.classMappings.find(m => m.source === this.selectedClassForAttributes);
+        const classLabel = currentClass ? (currentClass.label || this.generateReadableName(currentClass.source)) : this.selectedClassForAttributes;
+        breadcrumb.innerHTML = `Классы › <span>${classLabel}</span> › Атрибуты`;
+
+        const domainKey = this.selectedClassForAttributes || '__NO_DOMAIN__';
+        const domainAttributes = this.attributesByDomain.get(domainKey);
+
+        if (!domainAttributes || domainAttributes.length === 0) {
+            container.innerHTML = `<div class="no-mappings">Для класса "${classLabel}" атрибуты не найдены</div>`;
+            return;
+        }
+
+        const allProperties = this.getAllIfcProperties();
+
+		domainAttributes.forEach(({ mapping, index }) => {
 			const item = document.createElement('div');
 			item.className = 'mapping-item';
 			
 			const displayName = mapping.label || this.generateReadableName(mapping.source);
 			const savedMapping = this.getSavedMapping('attribute', mapping.source);
 			const usageInfo = savedMapping ? ` (использовано ${savedMapping.usageCount} раз)` : '';
-			const domainInfo = mapping.domain ? `Класс: ${mapping.domain}` : '';
 			
-			const allProperties = this.getAllIfcProperties();
-			const isCustomValue = !allProperties.includes(mapping.target);
+			const isValidTarget = mapping.target && allProperties.includes(mapping.target);
+            const selectedValue = isValidTarget ? mapping.target : '-- Выберите атрибут --';
 			
 			item.innerHTML = `
 				<div class="source-item">
 					<div class="element-name">${displayName}</div>
 					<div class="element-technical">${mapping.source}${usageInfo}</div>
-					${domainInfo ? `<div class="attribute-domain-info">${domainInfo}</div>` : ''}
 				</div>
 				<div class="target-item">
 					<div class="searchable-select" data-index="${index}" data-type="attribute">
-						<div class="selected-value">${mapping.target || '-- Выберите атрибут --'}</div>
+						<div class="selected-value">${selectedValue}</div>
 						<div class="dropdown">
 							<input type="text" class="search-input" placeholder="Поиск IFC атрибута...">
 							<div class="options-list">
-								<div class="option ${isCustomValue ? 'selected' : ''}" data-value="custom">-- Другое --</div>
 								${allProperties.map(attr => 
 									`<div class="option ${attr === mapping.target ? 'selected' : ''}" data-value="${attr}">${attr}</div>`
 								).join('')}
@@ -1041,8 +1729,8 @@ class IfcModelMapper {
 						</div>
 					</div>
 					<input type="text" class="mapping-input" 
-						   style="display: ${isCustomValue ? 'block' : 'none'};"
-						   value="${isCustomValue ? mapping.target : ''}" 
+						   style="display: none;"
+						   value="" 
 						   placeholder="Введите IFC атрибут">
 				</div>
 				<div class="verified-item">
@@ -1055,8 +1743,62 @@ class IfcModelMapper {
 		});
 
 		this.bindMappingEvents('attribute');
-		this.bindSearchableSelectEvents();
+        this.bindSearchableSelectEvents();
 	}
+
+    displayTypeMapping() {
+        const container = document.getElementById('typeMappingList');
+        container.innerHTML = '';
+
+        if (!this.currentMapping.typeMappings || this.currentMapping.typeMappings.length === 0) {
+            container.innerHTML = '<div class="no-mappings">Типы данных не найдены в исходной модели</div>';
+            return;
+        }
+
+        const ifcDataTypes = this.getIfcDataTypes();
+
+        this.currentMapping.typeMappings.forEach((mapping, index) => {
+            const item = document.createElement('div');
+            item.className = 'mapping-item';
+
+            const savedMapping = this.getSavedMapping('type', mapping.source);
+            const usageInfo = savedMapping ? ` (использовано ${savedMapping.usageCount} раз)` : '';
+
+            item.innerHTML = `
+                <div class="source-item">
+                    <div class="element-name">${mapping.label || mapping.source}</div>
+                    <div class="element-technical">${mapping.source}${usageInfo}</div>
+                </div>
+                <div class="target-item">
+                    <div class="searchable-select" data-index="${index}" data-type="type">
+                        <div class="selected-value">${mapping.target || '-- Выберите тип --'}</div>
+                        <div class="dropdown">
+                            <input type="text" class="search-input" placeholder="Поиск простого IFC типа...">
+                            <div class="options-list">
+                                ${ifcDataTypes.map(type => 
+                                    `<div class="option ${type === mapping.target ? 'selected' : ''}" data-value="${type}">${type}</div>`
+                                ).join('')}
+                            </div>
+                        </div>
+                    </div>
+                    <input type="text" class="mapping-input" 
+                           style="display: none;"
+                           value="" 
+                           placeholder="Введите IFC тип данных">
+                </div>
+                <div class="verified-item">
+                    <input type="checkbox" class="verified-checkbox" data-index="${index}" data-type="type" 
+                           ${mapping.verified ? 'checked' : ''}>
+                    <span class="verified-label">${mapping.verified ? '✓' : '✗'}</span>
+                </div>
+            `;
+
+            container.appendChild(item);
+        });
+
+        this.bindMappingEvents('type');
+        this.bindSearchableSelectEvents();
+    }
 
 	displayAssociationMapping() {
 		const container = document.getElementById('associationMappingList');
@@ -1130,7 +1872,7 @@ class IfcModelMapper {
 		});
 
 		this.bindMappingEvents('association');
-		this.bindSearchableSelectEvents();
+        this.bindSearchableSelectEvents();
 	}
 
     getDefaultAssociationMapping(associationName, domain, range) {
@@ -1158,120 +1900,125 @@ class IfcModelMapper {
 
     // Новый метод для привязки событий к улучшенным селектам
     bindSearchableSelectEvents() {
-        // Закрытие всех выпадающих списков при клике вне их
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('.searchable-select')) {
-                document.querySelectorAll('.searchable-select').forEach(select => {
-                    select.classList.remove('open');
+        // Глобальный обработчик закрытия селектов добавляем один раз
+        if (!this.searchableSelectGlobalHandler) {
+            this.searchableSelectGlobalHandler = (e) => {
+                if (!e.target.closest('.searchable-select')) {
+                    document.querySelectorAll('.searchable-select').forEach(select => {
+                        select.classList.remove('open');
+                    });
+                }
+            };
+            document.addEventListener('click', this.searchableSelectGlobalHandler);
+        }
+
+        document.querySelectorAll('.searchable-select').forEach(select => {
+            if (select.dataset.enhanced === 'true') {
+                return;
+            }
+            select.dataset.enhanced = 'true';
+
+            const selectedValue = select.querySelector('.selected-value');
+            if (selectedValue) {
+                selectedValue.addEventListener('click', (e) => {
+                    const isOpen = select.classList.contains('open');
+                    
+                    document.querySelectorAll('.searchable-select').forEach(s => {
+                        if (s !== select) {
+                            s.classList.remove('open');
+                        }
+                    });
+                    
+                    select.classList.toggle('open');
+                    
+                    if (!isOpen) {
+                        const searchInput = select.querySelector('.search-input');
+                        if (searchInput) {
+                            setTimeout(() => searchInput.focus(), 100);
+                        }
+                    }
+                    e.stopPropagation();
                 });
             }
-        });
 
-        // Открытие/закрытие выпадающего списка
-        document.querySelectorAll('.searchable-select .selected-value').forEach(selectedValue => {
-            selectedValue.addEventListener('click', (e) => {
-                const select = e.target.closest('.searchable-select');
-                const isOpen = select.classList.contains('open');
-                
-                // Закрываем все остальные
-                document.querySelectorAll('.searchable-select').forEach(s => {
-                    if (s !== select) {
-                        s.classList.remove('open');
-                    }
+            const searchInput = select.querySelector('.search-input');
+            if (searchInput) {
+                searchInput.addEventListener('input', (e) => {
+                    const searchTerm = e.target.value.toLowerCase();
+                    const options = select.querySelectorAll('.option');
+                    
+                    options.forEach(option => {
+                        const text = option.textContent.toLowerCase();
+                        if (text.includes(searchTerm) || option.classList.contains('option-group')) {
+                            option.style.display = '';
+                        } else {
+                            option.style.display = 'none';
+                        }
+                    });
                 });
-                
-                // Переключаем текущий
-                select.classList.toggle('open');
-                
-                // Фокусируемся на поле поиска при открытии
-                if (!isOpen) {
-                    const searchInput = select.querySelector('.search-input');
-                    if (searchInput) {
-                        setTimeout(() => searchInput.focus(), 100);
-                    }
-                }
-            });
-        });
 
-        // Поиск в выпадающем списке
-        document.querySelectorAll('.searchable-select .search-input').forEach(searchInput => {
-            searchInput.addEventListener('input', (e) => {
-                const searchTerm = e.target.value.toLowerCase();
-                const optionsList = e.target.nextElementSibling;
-                const options = optionsList.querySelectorAll('.option');
-                
-                options.forEach(option => {
-                    const text = option.textContent.toLowerCase();
-                    if (text.includes(searchTerm) || option.classList.contains('option-group')) {
-                        option.style.display = '';
+                searchInput.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                });
+            }
+
+            select.querySelectorAll('.option').forEach(option => {
+                option.addEventListener('click', (e) => {
+                    if (option.dataset.disabled === 'true') {
+                        return;
+                    }
+                    e.stopPropagation();
+                    const value = option.getAttribute('data-value');
+                    
+                    select.querySelectorAll('.option').forEach(opt => {
+                        opt.classList.remove('selected');
+                    });
+                    option.classList.add('selected');
+                    
+                    if (selectedValue) {
+                        selectedValue.textContent = value === 'custom' ? '-- Другое --' : value;
+                    }
+                    
+                    select.classList.remove('open');
+                    
+                    const index = parseInt(select.getAttribute('data-index'));
+                    const type = select.getAttribute('data-type');
+                    const input = select.parentNode ? select.parentNode.querySelector('.mapping-input') : null;
+                    
+                    if (value === 'custom') {
+                        if (input) {
+                            input.style.display = 'block';
+                            input.focus();
+                            const newValue = input.value || '';
+                            this.updateMapping(type, index, newValue);
+                        }
                     } else {
-                        option.style.display = 'none';
+                        if (input) {
+                            input.style.display = 'none';
+                            input.value = '';
+                        }
+                        this.updateMapping(type, index, value);
+                        
+                        if (type === 'class') {
+                            this.updatePredefinedTypeDropdown(index, value);
+                        }
+                        
+                        if (type === 'association' && value) {
+                            const mapping = this.currentMapping.associationMappings[index];
+                            if (mapping && mapping.domain) {
+                                const domainClass = this.currentMapping.classMappings.find(m => m.source === mapping.domain)?.target;
+                                if (domainClass) {
+                                    const classProperties = this.getIfcClassProperties(domainClass);
+                                    if (!classProperties.includes(value)) {
+                                        this.addCustomPropertyToClass(domainClass, value);
+                                    }
+                                }
+                            }
+                        }
                     }
                 });
             });
-            
-            // Предотвращаем закрытие при клике на поле поиска
-            searchInput.addEventListener('click', (e) => {
-                e.stopPropagation();
-            });
         });
-
-		document.querySelectorAll('.searchable-select .option').forEach(option => {
-			option.addEventListener('click', (e) => {
-				e.stopPropagation();
-				const select = e.target.closest('.searchable-select');
-				const selectedValue = select.querySelector('.selected-value');
-				const value = e.target.getAttribute('data-value');
-				
-				// Убираем выделение у всех опций
-				select.querySelectorAll('.option').forEach(opt => {
-					opt.classList.remove('selected');
-				});
-				
-				// Выделяем выбранную опцию
-				e.target.classList.add('selected');
-				
-				// Обновляем отображаемое значение
-				if (value === 'custom') {
-					selectedValue.textContent = '-- Другое --';
-				} else {
-					selectedValue.textContent = value;
-				}
-				
-				// Закрываем выпадающий список
-				select.classList.remove('open');
-				
-				// Обновляем маппинг
-				const index = parseInt(select.getAttribute('data-index'));
-				const type = select.getAttribute('data-type');
-				const input = select.parentNode.querySelector('.mapping-input');
-				
-				if (value === 'custom') {
-					input.style.display = 'block';
-					input.focus();
-					const newValue = input.value || '';
-					this.updateMapping(type, index, newValue);
-				} else {
-					input.style.display = 'none';
-					this.updateMapping(type, index, value);
-					input.value = '';
-					
-					// Если это ObjectProperty и выбранное свойство не существует в схеме, добавляем его
-					if (type === 'association' && value && value !== 'custom') {
-						const mapping = this.currentMapping.associationMappings[index];
-						if (mapping && mapping.domain) {
-							const domainClass = this.currentMapping.classMappings.find(m => m.source === mapping.domain)?.target;
-							if (domainClass) {
-								const classProperties = this.getIfcClassProperties(domainClass);
-								if (!classProperties.includes(value)) {
-									this.addCustomPropertyToClass(domainClass, value);
-								}
-							}
-						}
-					}
-				}
-			});
-		});
 	}
 
     bindMappingEvents(type) {
@@ -1283,6 +2030,8 @@ class IfcModelMapper {
             container = document.getElementById('attributeMappingList');
         } else if (type === 'association') {
             container = document.getElementById('associationMappingList');
+        } else if (type === 'type') {
+            container = document.getElementById('typeMappingList');
         } else {
             return;
         }
@@ -1347,11 +2096,102 @@ class IfcModelMapper {
 
 		if (type === 'class') {
 			revokeVerificationIfChanged(this.currentMapping.classMappings, index, value);
+			// Очищаем PredefinedType при изменении базового класса
+			if (this.currentMapping.classMappings[index]) {
+				const predefinedTypes = this.getPredefinedTypesForClass(value);
+				if (!predefinedTypes.includes(this.currentMapping.classMappings[index].predefinedType)) {
+					this.currentMapping.classMappings[index].predefinedType = null;
+				}
+			}
 		} else if (type === 'attribute') {
 			revokeVerificationIfChanged(this.currentMapping.attributeMappings, index, value);
 		} else if (type === 'association') {
 			revokeVerificationIfChanged(this.currentMapping.associationMappings, index, value);
+        } else if (type === 'type') {
+            revokeVerificationIfChanged(this.currentMapping.typeMappings, index, value);
 		}
+    }
+    
+    // Обновление выпадающего списка PredefinedType при изменении класса
+    updatePredefinedTypeDropdown(index, baseClass) {
+        // Находим элемент по data-index атрибуту в searchable-select
+        const selectElement = document.querySelector(`.searchable-select[data-index="${index}"][data-type="class"]`);
+        if (!selectElement) return;
+        
+        const mappingItem = selectElement.closest('.mapping-item');
+        if (!mappingItem) return;
+        
+        const targetItem = mappingItem.querySelector('.target-item');
+        if (!targetItem) return;
+        
+        const predefinedTypes = this.getPredefinedTypesForClass(baseClass);
+        const currentPredefinedType = this.currentMapping.classMappings[index]?.predefinedType || '';
+        const existingSelect = targetItem.querySelector('.predefined-type-select');
+        
+        if (predefinedTypes.length > 0) {
+            if (existingSelect) {
+                // Обновляем существующий список
+                existingSelect.innerHTML = `
+                    <option value="">-- Не указывать PredefinedType --</option>
+                    ${predefinedTypes.map(type => 
+                        `<option value="${type}" ${type === currentPredefinedType ? 'selected' : ''}>${type}</option>`
+                    ).join('')}
+                `;
+            } else {
+                // Создаем новый список
+                const container = targetItem.querySelector('.class-mapping-container');
+                if (!container) return;
+                
+                const select = document.createElement('select');
+                select.className = 'predefined-type-select';
+                select.setAttribute('data-index', index);
+                select.setAttribute('data-type', 'predefinedType');
+                select.innerHTML = `
+                    <option value="">-- Не указывать PredefinedType --</option>
+                    ${predefinedTypes.map(type => 
+                        `<option value="${type}" ${type === currentPredefinedType ? 'selected' : ''}>${type}</option>`
+                    ).join('')}
+                `;
+                container.appendChild(select);
+                this.bindPredefinedTypeEvents();
+            }
+        } else {
+            // Удаляем список, если PredefinedType не поддерживаются
+            if (existingSelect) {
+                existingSelect.remove();
+            }
+        }
+    }
+    
+    // Привязка обработчиков для выпадающего списка PredefinedType
+    bindPredefinedTypeEvents() {
+        document.querySelectorAll('.predefined-type-select').forEach(select => {
+            // Удаляем старые обработчики
+            const newSelect = select.cloneNode(true);
+            select.parentNode.replaceChild(newSelect, select);
+            
+            // Добавляем новый обработчик
+            newSelect.addEventListener('change', (e) => {
+                const index = parseInt(e.target.getAttribute('data-index'));
+                const predefinedType = e.target.value || null;
+                
+                if (this.currentMapping && this.currentMapping.classMappings[index]) {
+                    this.currentMapping.classMappings[index].predefinedType = predefinedType;
+                    
+                    // Снимаем подтверждение при изменении PredefinedType
+                    if (this.currentMapping.classMappings[index].verified) {
+                        this.currentMapping.classMappings[index].verified = false;
+                        const checkbox = document.querySelector(`.verified-checkbox[data-type="class"][data-index="${index}"]`);
+                        if (checkbox) {
+                            checkbox.checked = false;
+                            const label = checkbox.nextElementSibling;
+                            if (label) label.textContent = '✗';
+                        }
+                        this.showInfo('Значение изменено. Подтвердите соответствие заново.');
+                    }
+                }
+            });
+        });
     }
 
     updateVerificationStatus(type, index, isVerified) {
@@ -1363,7 +2203,7 @@ class IfcModelMapper {
                 
                 if (isVerified) {
                     const mapping = this.currentMapping.classMappings[index];
-                    this.addVerifiedMapping('class', mapping.source, mapping.target);
+                    this.addVerifiedMapping('class', mapping.source, mapping.target, mapping.predefinedType || null);
                 }
             }
         } else if (type === 'attribute') {
@@ -1393,6 +2233,15 @@ class IfcModelMapper {
                             }
                         }
                     }
+                }
+            }
+        } else if (type === 'type') {
+            if (this.currentMapping.typeMappings && this.currentMapping.typeMappings[index]) {
+                this.currentMapping.typeMappings[index].verified = isVerified;
+
+                if (isVerified) {
+                    const mapping = this.currentMapping.typeMappings[index];
+                    this.addVerifiedMapping('type', mapping.source, mapping.target);
                 }
             }
         }
@@ -1426,6 +2275,17 @@ class IfcModelMapper {
             const domainInfo = item.domain ? ` [Класс: ${item.domain}]` : '';
             mappingText += `${index + 1}. ${displayName} (${item.source})${domainInfo} → ${item.target} [${status}]\n`;
         });
+
+        mappingText += "\nСОПОСТАВЛЕНИЕ ТИПОВ:\n";
+        mappingText += "--------------------\n";
+        if (this.currentMapping.typeMappings && this.currentMapping.typeMappings.length > 0) {
+            this.currentMapping.typeMappings.forEach((item, index) => {
+                const status = item.verified ? '✓ ПОДТВЕРЖДЕНО' : '✗ НЕПОДТВЕРЖДЕНО';
+                mappingText += `${index + 1}. ${item.source} → ${item.target} [${status}]\n`;
+            });
+        } else {
+            mappingText += "Типы данных не найдены\n";
+        }
         
         mappingText += "\nСОПОСТАВЛЕНИЕ АССОЦИАЦИЙ:\n";
         mappingText += "-------------------------\n";
@@ -1442,11 +2302,14 @@ class IfcModelMapper {
         
         mappingText += `\nВсего классов: ${this.currentMapping.classMappings.length}`;
         mappingText += `\nВсего атрибутов: ${this.currentMapping.attributeMappings.length}`;
+        mappingText += `\nВсего типов: ${this.currentMapping.typeMappings.length}`;
         
         const verifiedClasses = this.currentMapping.classMappings.filter(item => item.verified).length;
         const verifiedAttributes = this.currentMapping.attributeMappings.filter(item => item.verified).length;
+        const verifiedTypes = this.currentMapping.typeMappings.filter(item => item.verified).length;
         mappingText += `\nПодтверждено классов: ${verifiedClasses}/${this.currentMapping.classMappings.length}`;
         mappingText += `\nПодтверждено атрибутов: ${verifiedAttributes}/${this.currentMapping.attributeMappings.length}`;
+        mappingText += `\nПодтверждено типов: ${verifiedTypes}/${this.currentMapping.typeMappings.length}`;
         
         const blob = new Blob([mappingText], { type: 'text/plain; charset=utf-8' });
         const url = URL.createObjectURL(blob);
@@ -2199,13 +3062,12 @@ DATA;
 							<li style="margin-bottom: 8px;"><strong>Для обратных иерархий:</strong> Убедитесь, что родительские классы OWL отображаются в родительские классы IFC, а дочерние - в дочерние</li>
 							<li style="margin-bottom: 8px;">Используйте классы из одной ветви IFC иерархии для связанных элементов</li>
 							<li style="margin-bottom: 8px;">Если классы из разных ветвей IFC, рассмотрите возможность изменения маппинга</li>
-							<li>Проверьте иерархию IFC классов в раскрывающихся блоках выше для понимания отношений между классами</li>
 						</ul>
 					</div>
 					
 					<div style="margin-top: 15px; padding: 12px; background: #ecfdf5; border-radius: 6px; border-left: 4px solid var(--success-color);">
 						<div style="font-size: 13px; color: var(--success-color); font-weight: 600;">
-							💡 Система проверяет реальную иерархию IFC 4.3 из загруженной схемы
+							💡 Система проверяет иерархию IFC из загруженной схемы
 						</div>
 					</div>
 				</div>

@@ -58,7 +58,32 @@
                         <button id="fullscreenSourceBtn" class="fullscreen-button">⛶</button>
                     </div>
                 </div>
-                <div id="sourceEditor" class="editor"></div>
+                <div class="tabs-container source-tabs-container">
+                    <div class="tabs-header source-tabs-header">
+                        <button class="tab-button active" data-tab="source-text">Текст</button>
+                        <button class="tab-button" data-tab="source-classes">Классы</button>
+                        <button class="tab-button" data-tab="source-properties">Свойства</button>
+                    </div>
+                    <div class="tabs-content source-tabs-content">
+                        <div id="source-text" class="tab-pane active">
+                            <div id="sourceEditor" class="editor"></div>
+                        </div>
+                        <div id="source-classes" class="tab-pane">
+                            <div class="owl-list-container">
+                                <div id="owlClassesList" class="owl-list">
+                                    <div class="no-items">Загрузите OWL файл для просмотра классов</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="source-properties" class="tab-pane">
+                            <div class="owl-list-container">
+                                <div id="owlPropertiesList" class="owl-list">
+                                    <div class="no-items">Загрузите OWL файл для просмотра свойств</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Только кнопка преобразования по центру -->
@@ -80,8 +105,8 @@
                 <div class="tabs-container">
                     <div class="tabs-header">
 						<!-- <button class="tab-button active" data-tab="ifc-result">IFC Результат</button> -->
+						<button class="tab-button" data-tab="type-mapping">Сопоставление типов</button>
 						<button class="tab-button" data-tab="class-mapping">Сопоставление классов</button>
-						<button class="tab-button" data-tab="attribute-mapping">Сопоставление атрибутов</button>
 						<button class="tab-button" data-tab="association-mapping">Сопоставление ассоциаций</button>
 					</div>
                     <div class="tabs-content">
@@ -89,33 +114,49 @@
                             <div id="targetEditor" class="editor"></div>
                         </div>
                         <div id="class-mapping" class="tab-pane">
-                            <div class="mapping-container">
-                                <div class="mapping-header">
-                                    <span class="source-header">OWL Класс</span>
-                                    <span class="target-header">IFC Эквивалент</span>
-                                    <span class="verified-header">Подтверждено</span>
-                                </div>
-                                <div id="classMappingList" class="mapping-list">
-                                    <!-- Сюда будут добавляться строки соответствий -->
-                                </div>
-                            </div>
+							<div class="class-tab-content">
+								<div class="mapping-container">
+									<div class="mapping-header">
+										<span class="source-header">OWL Class</span>
+										<span class="target-header">IFC Эквивалент</span>
+										<span class="verified-header">Подтверждено</span>
+									</div>
+									<div id="classMappingList" class="mapping-list">
+										<!-- Сюда будут добавляться строки соответствий -->
+									</div>
+								</div>
+								<div id="attributeResizer" class="attribute-resizer" title="Потяните, чтобы изменить высоту панели атрибутов"></div>
+								<div class="attribute-panel" id="attributePanel">
+									<div id="attributeBreadcrumb" class="attribute-breadcrumb">Классы › Выберите класс</div>
+									<div class="mapping-container attribute-mapping-container">
+										<div class="mapping-header">
+											<span class="source-header">OWL Datatype Property</span>
+											<span class="target-header">IFC Атрибут</span>
+											<span class="verified-header">Подтверждено</span>
+										</div>
+										<div id="attributeMappingList" class="mapping-list">
+											<div class="no-mappings">Выберите класс, чтобы увидеть его атрибуты</div>
+										</div>
+									</div>
+								</div>
+							</div>
                         </div>
-                        <div id="attribute-mapping" class="tab-pane">
-                            <div class="mapping-container">
-                                <div class="mapping-header">
-                                    <span class="source-header">OWL Атрибут</span>
-                                    <span class="target-header">IFC Атрибут</span>
-                                    <span class="verified-header">Подтверждено</span>
-                                </div>
-                                <div id="attributeMappingList" class="mapping-list">
-                                    <!-- Сюда будут добавляться строки соответствий -->
-                                </div>
-                            </div>
-                        </div>
+						<div id="type-mapping" class="tab-pane">
+							<div class="mapping-container">
+								<div class="mapping-header">
+									<span class="source-header">OWL Range Тип</span>
+									<span class="target-header">IFC DataType</span>
+									<span class="verified-header">Подтверждено</span>
+								</div>
+								<div id="typeMappingList" class="mapping-list">
+									<!-- Сюда будут добавляться строки соответствий типов -->
+								</div>
+							</div>
+						</div>
 						<div id="association-mapping" class="tab-pane">
 							<div class="mapping-container">
 								<div class="mapping-header">
-									<span class="source-header">OWL Ассоциация</span>
+									<span class="source-header">OWL Object Property</span>
 									<span class="target-header">IFC Отношение</span>
 									<span class="verified-header">Подтверждено</span>
 								</div>
